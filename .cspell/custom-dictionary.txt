@@ -1,0 +1,12 @@
+# Custom Dictionary Words
+codegen
+hrefs
+httpauth
+hypercache
+Mgmt
+nums
+shadcn
+softprops
+topbar
+vnode
+vnodes
