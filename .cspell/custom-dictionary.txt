@@ -1,5 +1,6 @@
 # Custom Dictionary Words
 aabb
+cmdk
 codegen
 Colada
 dlitem
@@ -17,6 +18,7 @@ shadcn
 softprops
 topbar
 unstub
+Viam
 Vitest
 vnode
 vnodes

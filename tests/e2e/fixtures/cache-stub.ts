@@ -51,6 +51,13 @@ export async function startCacheStub(): Promise<StubHandle> {
   };
 }
 
+// In-memory store for keys written during a test run.
+// Reset between runs implicitly because globalSetup spawns a
+// fresh stub. Tests share a single stub so writes from one
+// test are visible to the next — preserve that ordering when
+// composing scenarios.
+const keyStore = new Map<string, { bytes: Buffer; ttlMs?: number }>();
+
 function handle(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const auth = req.headers["authorization"];
@@ -59,6 +66,22 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
   if (requireAuth && auth !== `Bearer ${STUB_VALID_TOKEN}`) {
     res.writeHead(401, { "content-type": "application/json" });
     res.end(JSON.stringify({ error: "invalid token", code: "UNAUTHORIZED" }));
+    return;
+  }
+
+  // Single-key endpoints — handled dynamically. Match
+  // /v1/cache/{key} and /v1/owners/{key} before falling
+  // through to the static fixture table.
+  const cacheMatch = url.pathname.match(/^\/v1\/cache\/(.+)$/);
+  if (cacheMatch) {
+    handleCacheKey(req, res, decodeURIComponent(cacheMatch[1] ?? ""), url);
+    return;
+  }
+  const ownersMatch = url.pathname.match(/^\/v1\/owners\/(.+)$/);
+  if (ownersMatch) {
+    const key = decodeURIComponent(ownersMatch[1] ?? "");
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ key, owners: ["node-1", "node-2", "node-3"], node: "node-1" }));
     return;
   }
 
@@ -71,6 +94,126 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
 
   res.writeHead(200, { "content-type": fixture.contentType });
   res.end(fixture.body);
+}
+
+/**
+ * Single-key endpoint handler — supports GET (envelope only,
+ * the Accept: application/json path), HEAD, PUT, DELETE.
+ */
+function handleCacheKey(req: IncomingMessage, res: ServerResponse, key: string, url: URL): void {
+  switch (req.method) {
+    case "GET": {
+      const entry = keyStore.get(key);
+      if (entry === undefined) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "not found", code: "NOT_FOUND" }));
+        return;
+      }
+      const envelope = {
+        key,
+        value: entry.bytes.toString("base64"),
+        value_encoding: "base64",
+        ...(entry.ttlMs !== undefined ? { ttl_ms: entry.ttlMs } : {}),
+        version: 1,
+        node: "node-1",
+        owners: ["node-1", "node-2", "node-3"],
+      };
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(envelope));
+      return;
+    }
+    case "HEAD": {
+      const entry = keyStore.get(key);
+      if (entry === undefined) {
+        res.writeHead(404);
+        res.end();
+        return;
+      }
+      const headers: Record<string, string> = {
+        "x-cache-version": "1",
+        "x-cache-owners": "node-1,node-2,node-3",
+        "x-cache-node": "node-1",
+      };
+      if (entry.ttlMs !== undefined) headers["x-cache-ttl-ms"] = String(entry.ttlMs);
+      res.writeHead(200, headers);
+      res.end();
+      return;
+    }
+    case "PUT": {
+      const ttl = url.searchParams.get("ttl");
+      const ttlMs = ttl !== null ? parseGoDurationMs(ttl) : undefined;
+      collectBody(req).then((body) => {
+        keyStore.set(key, ttlMs !== undefined ? { bytes: body, ttlMs } : { bytes: body });
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(
+          JSON.stringify({
+            key,
+            stored: true,
+            ...(ttlMs !== undefined ? { ttl_ms: ttlMs } : {}),
+            bytes: body.length,
+            node: "node-1",
+            owners: ["node-1", "node-2", "node-3"],
+          }),
+        );
+      });
+      return;
+    }
+    case "DELETE": {
+      keyStore.delete(key);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({
+          key,
+          deleted: true,
+          node: "node-1",
+          owners: ["node-1", "node-2", "node-3"],
+        }),
+      );
+      return;
+    }
+    default:
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method not allowed", code: "METHOD_NOT_ALLOWED" }));
+  }
+}
+
+function collectBody(req: IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (c) => chunks.push(Buffer.from(c)));
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+/**
+ * Tiny Go-duration parser — handles the common suffixes
+ * (`ns`, `us`/`µs`, `ms`, `s`, `m`, `h`). The cache itself
+ * uses Go's `time.ParseDuration` which is more permissive
+ * (compound durations like `1h30m`) but the Phase B1 test
+ * only sends single-unit values.
+ */
+function parseGoDurationMs(s: string): number | undefined {
+  const match = s.trim().match(/^([0-9]+(?:\.[0-9]+)?)(ns|us|µs|ms|s|m|h)$/);
+  if (!match) return undefined;
+  const n = Number(match[1]);
+  switch (match[2]) {
+    case "ns":
+      return n / 1e6;
+    case "us":
+    case "µs":
+      return n / 1000;
+    case "ms":
+      return n;
+    case "s":
+      return n * 1000;
+    case "m":
+      return n * 60_000;
+    case "h":
+      return n * 3_600_000;
+    default:
+      return undefined;
+  }
 }
 
 function listen(server: Server, port: number): Promise<void> {

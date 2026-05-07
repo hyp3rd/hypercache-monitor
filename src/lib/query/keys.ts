@@ -20,4 +20,7 @@ export const queryKeys = {
   stats: (clusterId: string) => ["cluster", clusterId, "stats"] as const,
   config: (clusterId: string) => ["cluster", clusterId, "config"] as const,
   distMetrics: (clusterId: string) => ["cluster", clusterId, "dist-metrics"] as const,
+  // Phase B1 — Single-Key Inspector
+  key: (clusterId: string, key: string) => ["cluster", clusterId, "key", key] as const,
+  keyOwners: (clusterId: string, key: string) => ["cluster", clusterId, "key", key, "owners"] as const,
 } as const;

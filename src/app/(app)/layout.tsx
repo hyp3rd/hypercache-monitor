@@ -40,7 +40,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <NavLink href="/topology" icon={<Network aria-hidden className="h-4 w-4" />}>
             Topology
           </NavLink>
-          <NavLink href="/keys" icon={<Database aria-hidden className="h-4 w-4" />} disabled>
+          <NavLink href="/keys" icon={<Database aria-hidden className="h-4 w-4" />}>
             Keys
           </NavLink>
           <NavLink href="/metrics" icon={<BarChart3 aria-hidden className="h-4 w-4" />} disabled>
@@ -59,8 +59,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.1.0 · Phase A</p>
-          <p className="mt-1">Read-only Topology surface. Phase B unlocks Keys, Metrics, Bulk.</p>
+          <p className="font-mono">v0.2.0 · Phase B (in progress)</p>
+          <p className="mt-1">
+            Single-Key Inspector live. Metrics, Bulk, Auth posture, Spec viewer to follow.
+          </p>
         </div>
       </aside>
 

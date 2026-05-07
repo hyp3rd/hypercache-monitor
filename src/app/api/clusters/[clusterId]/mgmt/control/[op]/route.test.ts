@@ -56,10 +56,12 @@ afterEach(() => {
 });
 
 function makeReq(): NextRequest {
-  // Origin matches nextUrl.origin so the proxy's CSRF check passes.
+  // Sec-Fetch-Site=same-origin satisfies the proxy's CSRF gate
+  // — modern browsers set it on every fetch and the proxy
+  // trusts it as the authoritative same-origin signal.
   return new NextRequest(new URL("http://localhost:3000/api/clusters/default/mgmt/control/evict"), {
     method: "POST",
-    headers: { origin: "http://localhost:3000" },
+    headers: { "sec-fetch-site": "same-origin" },
   });
 }
 
