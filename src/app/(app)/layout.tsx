@@ -1,14 +1,14 @@
-import type { ReactNode } from "react";
-import Link from "next/link";
-import { Database, Network, BarChart3, Layers, ShieldCheck, FileCode2 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { BrandMark } from "@/components/brand-mark";
 import { ClusterPicker } from "@/components/cluster-picker";
 import { LogoutButton } from "@/components/logout-button";
-import { BrandMark } from "@/components/brand-mark";
-import { listClusters } from "@/lib/clusters/registry";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Separator } from "@/components/ui/separator";
 import { activeSession } from "@/lib/auth/session";
+import { listClusters } from "@/lib/clusters/registry";
+import { BarChart3, Database, FileCode2, Layers, Network, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 
 /**
  * Sidebar + topbar shell that wraps every authenticated route.

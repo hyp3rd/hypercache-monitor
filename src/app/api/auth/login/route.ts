@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { DEFAULT_CLUSTER_ID, getCluster } from "@/lib/clusters/registry";
 import { getSession, type Scope } from "@/lib/auth/session";
+import { DEFAULT_CLUSTER_ID, getCluster } from "@/lib/clusters/registry";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { z } from "zod";
 
 /**
  * Login route. POSTs from the client form arrive here with

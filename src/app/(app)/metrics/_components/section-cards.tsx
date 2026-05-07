@@ -1,5 +1,8 @@
 "use client";
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { CacheConfig, DistMetrics } from "@/lib/api/metrics";
+import type { FieldSeries, TrackedField } from "@/lib/metrics/use-metrics-polling";
 import {
   Activity,
   AlertTriangle,
@@ -32,9 +35,6 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CacheConfig, DistMetrics } from "@/lib/api/metrics";
-import type { FieldSeries, TrackedField } from "@/lib/metrics/use-metrics-polling";
 import { MetricTile } from "./metric-tile";
 
 /**

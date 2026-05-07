@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { ItemEnvelope } from "@/lib/api/keys";
 import { decodeBase64, decodeUtf8 } from "@/lib/value-decode";
 import { Pencil, X } from "lucide-react";
+import { useState } from "react";
+import { DeleteKeyButton } from "./delete-key-button";
+import { KeyForm } from "./key-form";
 import { OwnersStrip } from "./owners-strip";
 import { ValueViewer } from "./value-viewer";
-import { KeyForm } from "./key-form";
-import { DeleteKeyButton } from "./delete-key-button";
 
 /**
  * Detail card for a single key. Two modes:

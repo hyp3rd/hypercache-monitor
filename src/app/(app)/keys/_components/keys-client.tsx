@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchKey, type CacheApiError } from "@/lib/api/keys";
 import { queryKeys } from "@/lib/query/keys";
+import { useQuery } from "@tanstack/react-query";
 import { Database, KeyRound } from "lucide-react";
-import { KeySearch } from "./key-search";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback } from "react";
 import { KeyDetail } from "./key-detail";
+import { KeySearch } from "./key-search";
 
 /**
  * Orchestrator for the Single-Key Inspector. Owns:

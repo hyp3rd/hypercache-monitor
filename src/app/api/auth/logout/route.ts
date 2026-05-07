@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
+import { NextResponse } from "next/server";
 
 /**
  * Destroys the iron-session cookie. Cookies are HMAC-sealed, so

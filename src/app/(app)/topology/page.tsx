@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { activeSession } from "@/lib/auth/session";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { TopologyClient } from "./_components/topology-client";
 

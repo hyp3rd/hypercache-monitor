@@ -1,5 +1,5 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { Server } from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
 /**
  * Tiny stand-in for a HyperCache cluster. Used by Playwright's

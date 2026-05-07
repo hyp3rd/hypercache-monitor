@@ -1,7 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,10 +12,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { CacheApiError, deleteKey } from "@/lib/api/keys";
 import { queryKeys } from "@/lib/query/keys";
+import { useQueryClient } from "@tanstack/react-query";
+import { Loader2, Trash2 } from "lucide-react";
+import { useTransition } from "react";
+import { toast } from "sonner";
 
 /**
  * Two-step delete via shadcn AlertDialog. Operator clicks

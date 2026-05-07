@@ -1,6 +1,6 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
 import { resolve } from "node:path";
+import { defineConfig } from "vitest/config";
 
 // Vitest config for unit + component tests. E2E lives in
 // `playwright.config.ts`. The `src/lib/api/generated` tree is

@@ -1,9 +1,9 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Stats } from "@/lib/api/metrics";
+import { LineChart } from "lucide-react";
 
 /**
  * Per-name stats from `/stats`. The cache exposes whatever

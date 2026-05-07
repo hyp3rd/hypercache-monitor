@@ -1,6 +1,6 @@
+import { activeSession } from "@/lib/auth/session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { activeSession } from "@/lib/auth/session";
 import { KeysClient } from "./_components/keys-client";
 
 export const metadata: Metadata = {

@@ -1,15 +1,15 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { clusterMembersSchema, clusterRingSchema, fetchMgmt, heartbeatSchema } from "@/lib/api/mgmt";
 import { queryKeys } from "@/lib/query/keys";
 import { usePollInterval } from "@/lib/query/poll";
-import { fetchMgmt, clusterMembersSchema, clusterRingSchema, heartbeatSchema } from "@/lib/api/mgmt";
+import { useQuery } from "@tanstack/react-query";
+import { Activity, CircuitBoard, Network } from "lucide-react";
+import { HeartbeatStats } from "./heartbeat-stats";
 import { MembersTable } from "./members-table";
 import { RingSvg } from "./ring-svg";
-import { HeartbeatStats } from "./heartbeat-stats";
-import { Network, CircuitBoard, Activity } from "lucide-react";
 
 /**
  * Three independent queries — members, ring, heartbeat — laid

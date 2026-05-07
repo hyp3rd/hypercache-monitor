@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { fetchConfig, fetchDistMetrics, fetchStats, type DistMetrics } from "@/lib/api/metrics";
 import { queryKeys } from "@/lib/query/keys";
 import { usePollInterval } from "@/lib/query/poll";
-import { fetchConfig, fetchDistMetrics, fetchStats, type DistMetrics } from "@/lib/api/metrics";
-import { type DeltaPoint, RingBuffer } from "./ring-buffer";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { RingBuffer, type DeltaPoint } from "./ring-buffer";
 
 /**
  * The single hook the `/metrics` page uses to drive the entire

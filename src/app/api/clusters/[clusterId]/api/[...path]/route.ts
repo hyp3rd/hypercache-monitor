@@ -1,5 +1,5 @@
-import type { NextRequest } from "next/server";
 import { proxyToCache } from "@/lib/api/proxy";
+import type { NextRequest } from "next/server";
 
 /**
  * Proxy for the HyperCache **client API** (port 8080).
@@ -25,4 +25,4 @@ async function handle(req: NextRequest, ctx: RouteContext): Promise<Response> {
   });
 }
 
-export { handle as GET, handle as POST, handle as PUT, handle as DELETE, handle as HEAD, handle as PATCH };
+export { handle as DELETE, handle as GET, handle as HEAD, handle as PATCH, handle as POST, handle as PUT };

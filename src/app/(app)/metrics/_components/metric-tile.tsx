@@ -1,8 +1,8 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
 import type { FieldSeries } from "@/lib/metrics/use-metrics-polling";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 import { Sparkline } from "./sparkline";
 
 /**

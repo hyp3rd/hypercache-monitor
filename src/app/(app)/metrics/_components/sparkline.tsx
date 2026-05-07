@@ -1,7 +1,7 @@
 "use client";
 
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import type { DeltaPoint } from "@/lib/metrics/ring-buffer";
+import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
 /**
  * Compact sparkline for cumulative-counter rate-of-change. Bound

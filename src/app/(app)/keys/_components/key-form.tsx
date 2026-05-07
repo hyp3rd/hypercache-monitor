@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save } from "lucide-react";
-import { toast } from "sonner";
 import { CacheApiError, putKey } from "@/lib/api/keys";
 import { queryKeys } from "@/lib/query/keys";
+import { useQueryClient } from "@tanstack/react-query";
+import { Loader2, Save } from "lucide-react";
+import { useState, useTransition, type FormEvent } from "react";
+import { toast } from "sonner";
 
-const TTL_PATTERN = /^[0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h)+$/;
+const TTL_PATTERN = /^[0-9]+(\.[0-9]+)?(?:(?:n|u|µ|m)s?|[sh])+$/;
 
 /**
  * PUT form for a single key. Two inputs:

@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
 import { STUB_VALID_TOKEN } from "./fixtures/cache-stub";
 
 /**

@@ -1,6 +1,6 @@
+import { proxyToCache } from "@/lib/api/proxy";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { proxyToCache } from "@/lib/api/proxy";
 
 /**
  * Admin-gated proxy for the cluster-mutating mgmt HTTP routes:
