@@ -1,5 +1,5 @@
-import type { NextRequest } from "next/server";
 import { proxyToCache } from "@/lib/api/proxy";
+import type { NextRequest } from "next/server";
 
 /**
  * Proxy for the HyperCache **management HTTP** (port 8081).

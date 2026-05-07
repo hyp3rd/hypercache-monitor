@@ -1,9 +1,9 @@
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/lib/query/provider";
+import { cn } from "@/lib/utils";
 import type { Metadata, Viewport } from "next";
 import { Roboto, Roboto_Mono, Roboto_Slab } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
-import { QueryProvider } from "@/lib/query/provider";
-import { Toaster } from "@/components/ui/sonner";
-import { cn } from "@/lib/utils";
 import "./globals.css";
 
 // Self-host the Roboto family via next/font/google. Subset to

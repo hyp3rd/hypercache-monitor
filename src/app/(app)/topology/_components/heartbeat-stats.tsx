@@ -1,8 +1,8 @@
 "use client";
 
 import type { Heartbeat } from "@/lib/api/mgmt";
-import { Activity, AlertTriangle, ArrowUpRightFromCircle, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Activity, AlertTriangle, ArrowUpRightFromCircle, UserMinus } from "lucide-react";
 
 /**
  * Heartbeat stats with rich visual treatment. Each stat has its

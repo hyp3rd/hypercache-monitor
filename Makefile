@@ -26,24 +26,17 @@ help: ## Print available targets and their descriptions.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ { printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 # ---- Development -----------------------------------------------------
-# `next build` evaluates server modules during page-data
-# collection — including src/env/server.ts's zod validator.
-# Without env vars present, the validator throws and the build
-# fails. We fall back to safe stubs so `make build` works in a
-# fresh checkout; CI sets the real values via the workflow's
-# `env:` block, and runtime (operator deploy) still requires
-# real env (the stubs aren't baked into the artifact — server
-# env is read at runtime from the live process.env).
-BUILD_ENV = \
-	HYPERCACHE_API_URL=$${HYPERCACHE_API_URL:-http://localhost:8080} \
-	HYPERCACHE_MGMT_URL=$${HYPERCACHE_MGMT_URL:-http://localhost:8081} \
-	IRON_SESSION_SECRET=$${IRON_SESSION_SECRET:-build-time-stub-not-for-production-use-32chars-min}
+# `make build` requires no env stubs: src/env/server.ts skips
+# strict validation during NEXT_PHASE=phase-production-build,
+# which Next sets for us. Runtime (operator deploy) still
+# enforces validation on each fresh server process — the build
+# artifact is JS source, not a snapshot of module exports.
 
 dev: ## Run the dev server (next dev) on :3000.
 	$(NPM) run dev
 
 build: ## Production build (next build, standalone output).
-	$(BUILD_ENV) $(NPM) run build
+	$(NPM) run build
 
 start: ## Run the production server (requires a prior `make build`).
 	$(NPM) run start
@@ -53,7 +46,7 @@ fmt: ## Auto-format with Prettier.
 	$(NPX) prettier --write .
 
 fmt-check: ## Verify Prettier formatting (CI-friendly; non-zero on diff).
-	$(NPX) prettier --check .
+	$(NPX) prettier --ignore-unknown --check .
 
 lint: ## Run ESLint flat config.
 	$(NPM) run lint

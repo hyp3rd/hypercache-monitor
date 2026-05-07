@@ -1,14 +1,14 @@
-import type { ReactNode } from "react";
-import Link from "next/link";
-import { Database, Network, BarChart3, Layers, ShieldCheck, FileCode2 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { BrandMark } from "@/components/brand-mark";
 import { ClusterPicker } from "@/components/cluster-picker";
 import { LogoutButton } from "@/components/logout-button";
-import { BrandMark } from "@/components/brand-mark";
-import { listClusters } from "@/lib/clusters/registry";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Separator } from "@/components/ui/separator";
 import { activeSession } from "@/lib/auth/session";
+import { listClusters } from "@/lib/clusters/registry";
+import { BarChart3, Database, FileCode2, Layers, Network, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 
 /**
  * Sidebar + topbar shell that wraps every authenticated route.
@@ -40,10 +40,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <NavLink href="/topology" icon={<Network aria-hidden className="h-4 w-4" />}>
             Topology
           </NavLink>
-          <NavLink href="/keys" icon={<Database aria-hidden className="h-4 w-4" />} disabled>
+          <NavLink href="/keys" icon={<Database aria-hidden className="h-4 w-4" />}>
             Keys
           </NavLink>
-          <NavLink href="/metrics" icon={<BarChart3 aria-hidden className="h-4 w-4" />} disabled>
+          <NavLink href="/metrics" icon={<BarChart3 aria-hidden className="h-4 w-4" />}>
             Metrics
           </NavLink>
           <NavLink href="/bulk" icon={<Layers aria-hidden className="h-4 w-4" />} disabled>
@@ -59,8 +59,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.1.0 · Phase A</p>
-          <p className="mt-1">Read-only Topology surface. Phase B unlocks Keys, Metrics, Bulk.</p>
+          <p className="font-mono">v0.3.0 · Phase B (in progress)</p>
+          <p className="mt-1">
+            Single-Key Inspector and Metrics live. Bulk, Auth posture, Spec viewer to follow.
+          </p>
         </div>
       </aside>
 

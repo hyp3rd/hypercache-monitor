@@ -1,6 +1,6 @@
+import { BrandMark } from "@/components/brand-mark";
 import type { Metadata } from "next";
 import { LoginForm } from "./_components/login-form";
-import { BrandMark } from "@/components/brand-mark";
 
 export const metadata: Metadata = {
   title: "Sign in",

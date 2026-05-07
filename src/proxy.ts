@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getIronSession } from "iron-session";
 import { sessionOptions, type SessionData } from "@/lib/auth/session";
+import { getIronSession } from "iron-session";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 /**
  * Next.js 16 **edge proxy** (formerly `middleware.ts`). Renamed

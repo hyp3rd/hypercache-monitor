@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { proxyToCache } from "./proxy";
 
 /**
@@ -121,12 +121,11 @@ describe("proxyToCache", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("returns 403 CSRF when Origin header doesn't match on a mutating verb", async () => {
+  it("returns 403 CSRF when Sec-Fetch-Site reports a cross-site request", async () => {
     const res = await proxyToCache(
       makeReq({
         method: "POST",
-        origin: "http://localhost:3000",
-        headers: { origin: "http://attacker.example" },
+        headers: { "sec-fetch-site": "cross-site" },
       }),
       { target: "api", path: "/v1/cache/k" },
     );
@@ -135,13 +134,49 @@ describe("proxyToCache", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("returns 403 CSRF when Origin header is absent on a mutating verb", async () => {
-    const res = await proxyToCache(makeReq({ method: "POST" }), {
-      target: "api",
-      path: "/v1/cache/k",
-    });
+  it("returns 403 CSRF when Sec-Fetch-Site reports a same-site (different-origin) request", async () => {
+    const res = await proxyToCache(
+      makeReq({
+        method: "POST",
+        headers: { "sec-fetch-site": "same-site" },
+      }),
+      { target: "api", path: "/v1/cache/k" },
+    );
     expect(res.status).toBe(403);
     expect((await res.json()).code).toBe("CSRF");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("permits mutating verbs when Sec-Fetch-Site is same-origin", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("[]", { status: 200 }));
+    const res = await proxyToCache(
+      makeReq({
+        method: "POST",
+        headers: { "sec-fetch-site": "same-origin" },
+      }),
+      { target: "api", path: "/v1/cache/k" },
+    );
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("falls back to Origin/Host comparison when Sec-Fetch-Site is absent", async () => {
+    // Legacy / non-browser clients without Sec-Fetch-Site fall
+    // through to the explicit Origin-host vs Host-header check.
+    // Mismatch → 403; match → forwarded.
+    const res = await proxyToCache(
+      makeReq({
+        method: "POST",
+        headers: {
+          origin: "http://attacker.example",
+          host: "localhost:3000",
+        },
+      }),
+      { target: "api", path: "/v1/cache/k" },
+    );
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("CSRF");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("forwards GETs upstream with bearer + X-Request-Id and strips Cookie/Host", async () => {

@@ -1,8 +1,11 @@
 # Custom Dictionary Words
 aabb
+Acks
+cmdk
 codegen
 Colada
 dlitem
+Fanout
 govulncheck
 hrefs
 httpauth
@@ -10,13 +13,18 @@ hypercache
 libgbm
 libxcb
 Lockfiles
+Merkle
 Mgmt
 nums
 nvmrc
 shadcn
 softprops
+sparkline
+sparklines
+Synthesises
 topbar
 unstub
+Viam
 Vitest
 vnode
 vnodes

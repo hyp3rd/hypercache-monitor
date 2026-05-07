@@ -12,5 +12,7 @@ package-lock.json
 
 # Vendored config Prettier shouldn't reflow
 LICENSE
+.pre-commit-config.yaml
 .cspell/
+.github/
 .pre-commit/

@@ -33,15 +33,36 @@ const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
 
-const parsed = schema.safeParse(process.env);
+// `next build` runs page-data collection by importing every
+// route module, which transitively reads `serverEnv.*` at the
+// top level of `lib/auth/session.ts` and `lib/clusters/registry.ts`.
+// The Docker image is built without runtime secrets — those are
+// injected at deploy time — so a strict throw here breaks the
+// image build. We skip validation in the build phase only; each
+// production server process re-evaluates this module on startup
+// (the build artifact is JS source, not a snapshot of module
+// exports), at which point real env is present and validation
+// runs as designed.
+//
+// `NEXT_PHASE` is set by the Next.js CLI; "phase-production-build"
+// is the documented identifier for `next build` and is stable
+// across the App Router lifecycle.
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 
-if (!parsed.success) {
-  // Fail-fast at module load. The Next.js server won't boot if
-  // env is invalid — preferable to a silent runtime auth bypass.
-  // The error message lists every failing field by name; values
-  // are NOT included (could be a token or secret).
-  const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
-  throw new Error(`Invalid environment for hypercache-monitor:\n${issues}`);
+function loadEnv(): z.infer<typeof schema> {
+  if (isBuildPhase) {
+    return process.env as unknown as z.infer<typeof schema>;
+  }
+  const parsed = schema.safeParse(process.env);
+  if (!parsed.success) {
+    // Fail-fast at module load. The Next.js server won't boot if
+    // env is invalid — preferable to a silent runtime auth bypass.
+    // The error message lists every failing field by name; values
+    // are NOT included (could be a token or secret).
+    const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
+    throw new Error(`Invalid environment for hypercache-monitor:\n${issues}`);
+  }
+  return parsed.data;
 }
 
-export const serverEnv = parsed.data;
+export const serverEnv = loadEnv();

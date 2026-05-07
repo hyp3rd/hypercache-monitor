@@ -1,11 +1,11 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import type { Scope } from "@/lib/auth/session";
 import { activeSession } from "@/lib/auth/session";
 import { getCluster } from "@/lib/clusters/registry";
-import type { Scope } from "@/lib/auth/session";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 
 /**
  * Server-side proxy from the browser to a HyperCache cluster.
@@ -73,14 +73,47 @@ export async function proxyToCache(req: NextRequest, opts: ProxyOptions): Promis
     return jsonError(403, "FORBIDDEN", `requires scope: ${opts.requiredScope}`, requestId);
   }
 
-  // 3. CSRF — Origin-header check on mutating verbs. SameSite=Strict
-  //    on the session cookie already blocks the cross-site cookie
-  //    send, but origin-checking is the canonical defense-in-depth.
+  // 3. CSRF — defense in depth over SameSite=Strict cookies.
+  //
+  //    Sec-Fetch-Site is the authoritative signal: browsers set
+  //    it on every fetch, it can't be forged from JS, and it
+  //    distinguishes "same-origin" / "same-site" / "cross-site"
+  //    explicitly. We trust it when present.
+  //
+  //    For legacy clients without Sec-Fetch-Site, fall back to
+  //    comparing the Origin URL's host to the request's Host
+  //    header (NOT `req.nextUrl.origin`, which `next dev` derives
+  //    from configured hostname rather than the actual request —
+  //    Origin: http://127.0.0.1:3000 vs nextUrl.origin:
+  //    http://localhost:3000 mismatched the same loopback during
+  //    Phase B1 E2E and 403'd legitimate same-origin requests).
   if (MUTATING_METHODS.has(req.method)) {
-    const origin = req.headers.get("origin");
-    const expected = req.nextUrl.origin;
-    if (!origin || origin !== expected) {
-      return jsonError(403, "CSRF", "origin mismatch", requestId);
+    const fetchSite = req.headers.get("sec-fetch-site");
+
+    if (fetchSite !== null) {
+      if (fetchSite !== "same-origin") {
+        return jsonError(
+          403,
+          "CSRF",
+          `cross-origin request rejected (sec-fetch-site=${fetchSite})`,
+          requestId,
+        );
+      }
+    } else {
+      const origin = req.headers.get("origin");
+      const host = req.headers.get("host");
+      if (origin === null || host === null) {
+        return jsonError(403, "CSRF", "missing origin/host headers", requestId);
+      }
+      let originHost: string;
+      try {
+        originHost = new URL(origin).host;
+      } catch {
+        return jsonError(403, "CSRF", "malformed origin header", requestId);
+      }
+      if (originHost !== host) {
+        return jsonError(403, "CSRF", "origin/host mismatch", requestId);
+      }
     }
   }
 
