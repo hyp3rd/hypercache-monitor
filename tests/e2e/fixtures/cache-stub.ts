@@ -15,6 +15,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
  *   GET /config                 — metrics: capacity card
  *   GET /stats                  — metrics: per-name stats table
  *   GET /dist/metrics           — metrics: distributed counters
+ *   POST /v1/cache/batch/get    — bulk: multi-key fetch
+ *   POST /v1/cache/batch/put    — bulk: CSV import
+ *   POST /v1/cache/batch/delete — bulk: bulk delete
  *
  * Auth: any non-`/v1/openapi.yaml` route requires
  * `Authorization: Bearer <STUB_VALID_TOKEN>`. Mismatched tokens
@@ -83,6 +86,22 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
   if (url.pathname === "/dist/metrics") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify(makeDistMetrics(distMetricsCalls++)));
+    return;
+  }
+
+  // Bulk endpoints. Each operates on the same `keyStore` the
+  // single-key handlers use so a Phase B1 PUT is visible to a
+  // Phase B3 batch/get without test-coupling between specs.
+  if (url.pathname === "/v1/cache/batch/get" && req.method === "POST") {
+    handleBatchGet(req, res);
+    return;
+  }
+  if (url.pathname === "/v1/cache/batch/put" && req.method === "POST") {
+    handleBatchPut(req, res);
+    return;
+  }
+  if (url.pathname === "/v1/cache/batch/delete" && req.method === "POST") {
+    handleBatchDelete(req, res);
     return;
   }
 
@@ -191,6 +210,118 @@ function handleCacheKey(req: IncomingMessage, res: ServerResponse, key: string, 
     default:
       res.writeHead(405, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: "method not allowed", code: "METHOD_NOT_ALLOWED" }));
+  }
+}
+
+/**
+ * Batch handlers — share `keyStore` with the single-key handlers
+ * so a Phase B1 PUT is visible to a Phase B3 batch/get.
+ *
+ * Per-item granularity matches the Go server: the batch as a
+ * whole is 200 unless the request didn't parse; missing /
+ * empty-key items produce typed per-item failures rather than
+ * voiding the rest of the batch.
+ */
+function handleBatchGet(req: IncomingMessage, res: ServerResponse): void {
+  collectBody(req)
+    .then((body) => {
+      const parsed = parseJson(body) as { keys?: string[] } | null;
+      if (parsed === null || !Array.isArray(parsed.keys)) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid JSON: keys[] required", code: "BAD_REQUEST" }));
+        return;
+      }
+      const results = parsed.keys.map((key) => {
+        if (key === "") return { key, found: false };
+        const entry = keyStore.get(key);
+        if (entry === undefined) return { key, found: false };
+        return {
+          key,
+          found: true,
+          value: entry.bytes.toString("base64"),
+          value_encoding: "base64",
+          ...(entry.ttlMs !== undefined ? { ttl_ms: entry.ttlMs } : {}),
+          version: 1,
+          owners: ["node-1", "node-2", "node-3"],
+        };
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ results, node: "node-1" }));
+    })
+    .catch(() => {
+      res.writeHead(500, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "internal", code: "INTERNAL" }));
+    });
+}
+
+function handleBatchPut(req: IncomingMessage, res: ServerResponse): void {
+  collectBody(req)
+    .then((body) => {
+      const parsed = parseJson(body) as {
+        items?: Array<{ key?: string; value?: string; value_encoding?: string; ttl_ms?: number }>;
+      } | null;
+      if (parsed === null || !Array.isArray(parsed.items)) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid JSON: items[] required", code: "BAD_REQUEST" }));
+        return;
+      }
+      const results = parsed.items.map((item) => {
+        if (!item.key || item.key === "") {
+          return { key: item.key ?? "", stored: false, error: "missing key", code: "BAD_REQUEST" };
+        }
+        const valueStr = item.value ?? "";
+        let bytes: Buffer;
+        if (item.value_encoding === "base64") {
+          try {
+            bytes = Buffer.from(valueStr, "base64");
+          } catch {
+            return { key: item.key, stored: false, error: "invalid base64", code: "BAD_REQUEST" };
+          }
+        } else {
+          bytes = Buffer.from(valueStr, "utf-8");
+        }
+        keyStore.set(item.key, item.ttl_ms !== undefined ? { bytes, ttlMs: item.ttl_ms } : { bytes });
+        return { key: item.key, stored: true, bytes: bytes.length, owners: ["node-1", "node-2", "node-3"] };
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ results, node: "node-1" }));
+    })
+    .catch(() => {
+      res.writeHead(500, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "internal", code: "INTERNAL" }));
+    });
+}
+
+function handleBatchDelete(req: IncomingMessage, res: ServerResponse): void {
+  collectBody(req)
+    .then((body) => {
+      const parsed = parseJson(body) as { keys?: string[] } | null;
+      if (parsed === null || !Array.isArray(parsed.keys)) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid JSON: keys[] required", code: "BAD_REQUEST" }));
+        return;
+      }
+      const results = parsed.keys.map((key) => {
+        if (key === "") {
+          return { key, deleted: false, error: "missing key", code: "BAD_REQUEST" };
+        }
+        keyStore.delete(key);
+        return { key, deleted: true, owners: ["node-1", "node-2", "node-3"] };
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ results, node: "node-1" }));
+    })
+    .catch(() => {
+      res.writeHead(500, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "internal", code: "INTERNAL" }));
+    });
+}
+
+function parseJson(body: Buffer): unknown {
+  try {
+    return JSON.parse(body.toString("utf-8"));
+  } catch {
+    return null;
   }
 }
 

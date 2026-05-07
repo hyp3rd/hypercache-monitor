@@ -96,7 +96,7 @@ async function readError(response: Response): Promise<CacheApiError> {
 
 // ---- Helpers ---------------------------------------------------------
 
-function apiPath(clusterId: string, ...segments: string[]): string {
+export function apiPath(clusterId: string, ...segments: string[]): string {
   const encodedCluster = encodeURIComponent(clusterId);
   const tail = segments.map((s) => encodeURIComponent(s)).join("/");
   return `/api/clusters/${encodedCluster}/api/${tail}`;

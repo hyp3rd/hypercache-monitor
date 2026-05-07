@@ -10,13 +10,16 @@ govulncheck
 hrefs
 httpauth
 hypercache
+laggier
 libgbm
 libxcb
 Lockfiles
 Merkle
 Mgmt
+misrouted
 nums
 nvmrc
+papaparse
 shadcn
 softprops
 sparkline

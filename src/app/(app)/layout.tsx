@@ -46,7 +46,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <NavLink href="/metrics" icon={<BarChart3 aria-hidden className="h-4 w-4" />}>
             Metrics
           </NavLink>
-          <NavLink href="/bulk" icon={<Layers aria-hidden className="h-4 w-4" />} disabled>
+          <NavLink href="/bulk" icon={<Layers aria-hidden className="h-4 w-4" />}>
             Bulk operations
           </NavLink>
           <div className="mt-2" />
@@ -59,9 +59,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.3.0 · Phase B (in progress)</p>
+          <p className="font-mono">v0.4.0 · Phase B (in progress)</p>
           <p className="mt-1">
-            Single-Key Inspector and Metrics live. Bulk, Auth posture, Spec viewer to follow.
+            Single-Key Inspector, Metrics, and Bulk live. Auth posture, Spec viewer to follow.
           </p>
         </div>
       </aside>
