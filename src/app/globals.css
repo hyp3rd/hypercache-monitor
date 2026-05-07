@@ -1,0 +1,207 @@
+/*
+ * Tailwind v4 reads its theme tokens straight from CSS — no
+ * `tailwind.config.js` file. The `@theme inline` block below
+ * exposes shadcn/ui-shaped tokens to Tailwind utilities, plus
+ * a dedicated brand violet ramp the control panel uses for
+ * accents (primary actions, focus rings, brand mark).
+ *
+ * Fonts come in via `--font-sans` / `--font-mono` CSS vars,
+ * which `src/app/layout.tsx` populates from `next/font/google`
+ * (Inter for UI, JetBrains Mono for data / hashes / IDs).
+ *
+ * Dark mode is the default for ops engineers; the `:root`
+ * block defines the light tokens, the `.dark` block overrides
+ * for dark. `next-themes` toggles the `.dark` class on
+ * `<html>`.
+ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Roboto family (loaded via next/font/google in layout.tsx).
+   * --font-sans  → body / UI / table data    (Roboto)
+   * --font-serif → headings (h1-h6)          (Roboto Slab)
+   * --font-mono  → IDs, hashes, counters     (Roboto Mono)
+   *
+   * The fallback chain after each var keeps the page legible
+   * while next/font is fetching — system Roboto on Android is
+   * the closest fallback for sans, default mono for the
+   * monospaced ramp.
+   */
+  --font-sans:
+    var(--font-sans), Roboto, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial,
+    sans-serif;
+  --font-serif: var(--font-serif), "Roboto Slab", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono:
+    var(--font-mono), "Roboto Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-muted: var(--brand-muted);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Light theme — soft surfaces, violet primary. */
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.18 0.01 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.01 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.01 285);
+  --primary: oklch(0.55 0.22 295);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.96 0.01 285);
+  --secondary-foreground: oklch(0.22 0.01 285);
+  --muted: oklch(0.96 0.005 285);
+  --muted-foreground: oklch(0.5 0.02 285);
+  --accent: oklch(0.95 0.03 295);
+  --accent-foreground: oklch(0.4 0.18 295);
+  --destructive: oklch(0.6 0.23 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.92 0.005 285);
+  --input: oklch(0.92 0.005 285);
+  --ring: oklch(0.55 0.22 295);
+
+  --brand: oklch(0.55 0.22 295);
+  --brand-foreground: oklch(0.98 0 0);
+  --brand-muted: oklch(0.6 0.18 295 / 0.15);
+}
+
+.dark {
+  /* Dark theme — deep violet-tinted neutrals with a vivid
+   * primary. Borders are a touch warmer than pure gray so
+   * dense data tables still have visible separators.
+   */
+  --background: oklch(0.16 0.012 280);
+  --foreground: oklch(0.96 0.005 285);
+  --card: oklch(0.2 0.015 282);
+  --card-foreground: oklch(0.96 0.005 285);
+  --popover: oklch(0.2 0.015 282);
+  --popover-foreground: oklch(0.96 0.005 285);
+  --primary: oklch(0.72 0.21 295);
+  --primary-foreground: oklch(0.18 0.01 285);
+  --secondary: oklch(0.28 0.015 282);
+  --secondary-foreground: oklch(0.96 0.005 285);
+  --muted: oklch(0.26 0.012 282);
+  --muted-foreground: oklch(0.7 0.02 285);
+  --accent: oklch(0.36 0.07 295);
+  --accent-foreground: oklch(0.96 0.01 295);
+  --destructive: oklch(0.7 0.22 22);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.32 0.018 282);
+  --input: oklch(0.28 0.015 282);
+  --ring: oklch(0.72 0.21 295);
+
+  --brand: oklch(0.72 0.21 295);
+  --brand-foreground: oklch(0.18 0.01 285);
+  --brand-muted: oklch(0.55 0.2 295 / 0.18);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Roboto Slab on every heading. Ops control panel sections
+   * read with stronger character contrast vs the body Roboto;
+   * the slab face is also forgiving at large sizes (the cluster
+   * page header lives at 3xl) where geometric sans tends to
+   * feel anonymous.
+   *
+   * Tighter tracking on h1/h2 — Roboto Slab's default tracking
+   * is generous; the panel benefits from a denser headline.
+   */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    font-feature-settings: "ss01" 1;
+  }
+  h1,
+  h2 {
+    letter-spacing: -0.015em;
+  }
+
+  /* High-contrast focus rings for keyboard navigation —
+   * Lighthouse a11y >= 95 (Phase A verification target).
+   */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Tabular numbers everywhere there's a `font-mono` class —
+   * counters in tables and stats stay aligned column-to-column.
+   */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Subtle grid backdrop for the auth shell — gives the login
+ * card depth without resorting to a stock photo. Pure CSS,
+ * no images, scales fluidly.
+ */
+.grid-backdrop {
+  background-image:
+    linear-gradient(to right, oklch(from var(--foreground) l c h / 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(from var(--foreground) l c h / 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Soft glow utility — used on alive-state badges and the
+ * brand mark so the eye lands on healthy state first.
+ */
+.brand-glow {
+  box-shadow:
+    0 0 0 1px oklch(from var(--brand) l c h / 0.3),
+    0 4px 24px -4px oklch(from var(--brand) l c h / 0.4);
+}
+
+.alive-glow {
+  box-shadow:
+    0 0 0 1px oklch(0.7 0.18 152 / 0.25),
+    0 0 12px -2px oklch(0.7 0.18 152 / 0.4);
+}

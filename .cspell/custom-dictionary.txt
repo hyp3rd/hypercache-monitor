@@ -1,0 +1,23 @@
+# Custom Dictionary Words
+aabb
+codegen
+Colada
+dlitem
+govulncheck
+hrefs
+httpauth
+hypercache
+libgbm
+libxcb
+Lockfiles
+Mgmt
+nums
+nvmrc
+shadcn
+softprops
+topbar
+unstub
+Vitest
+vnode
+vnodes
+vulns

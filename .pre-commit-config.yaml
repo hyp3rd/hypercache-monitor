@@ -6,7 +6,16 @@ repos:
       - id: check-merge-conflict
       - id: check-json
       - id: pretty-format-json
-        exclude: cspell.json
+        exclude: |
+          (?x)^(
+              .prettierrc.json|
+              components.json|
+              cspell.json|
+              package.json|
+              package-lock.json|
+              tsconfig.json|
+              test-results/.last-run.json
+          )$
       - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: trailing-whitespace
