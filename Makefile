@@ -46,7 +46,7 @@ fmt: ## Auto-format with Prettier.
 	$(NPX) prettier --write .
 
 fmt-check: ## Verify Prettier formatting (CI-friendly; non-zero on diff).
-	$(NPX) prettier --check .
+	$(NPX) prettier --ignore-unknown --check .
 
 lint: ## Run ESLint flat config.
 	$(NPM) run lint

@@ -12,6 +12,9 @@ import type { Server } from "node:http";
  *   GET /cluster/members        — topology members table
  *   GET /cluster/ring           — topology hash ring viz
  *   GET /cluster/heartbeat      — topology heartbeat stats
+ *   GET /config                 — metrics: capacity card
+ *   GET /stats                  — metrics: per-name stats table
+ *   GET /dist/metrics           — metrics: distributed counters
  *
  * Auth: any non-`/v1/openapi.yaml` route requires
  * `Authorization: Bearer <STUB_VALID_TOKEN>`. Mismatched tokens
@@ -58,6 +61,11 @@ export async function startCacheStub(): Promise<StubHandle> {
 // composing scenarios.
 const keyStore = new Map<string, { bytes: Buffer; ttlMs?: number }>();
 
+// Monotonically increasing on each /dist/metrics call. Drives
+// non-zero deltas in the metrics dashboard sparklines without
+// any timing tricks in the E2E itself.
+let distMetricsCalls = 0;
+
 function handle(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const auth = req.headers["authorization"];
@@ -66,6 +74,15 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
   if (requireAuth && auth !== `Bearer ${STUB_VALID_TOKEN}`) {
     res.writeHead(401, { "content-type": "application/json" });
     res.end(JSON.stringify({ error: "invalid token", code: "UNAUTHORIZED" }));
+    return;
+  }
+
+  // /dist/metrics is dynamic — counters increment on every
+  // call so the Phase B2 dashboard's delta-per-sec math has
+  // non-zero numbers to render after the second poll.
+  if (url.pathname === "/dist/metrics") {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify(makeDistMetrics(distMetricsCalls++)));
     return;
   }
 
@@ -271,4 +288,87 @@ const FIXTURES: Record<string, { contentType: string; body: string }> = {
       readPrimaryPromote: 2,
     }),
   },
+  "/config": {
+    contentType: "application/json",
+    body: JSON.stringify({
+      capacity: 100_000,
+      allocation: 7_321,
+      maxCacheSize: 256 * 1024 * 1024,
+      evictionInterval: "30s",
+      expirationInterval: "5m0s",
+      evictionAlgorithm: "lru",
+      replication: 3,
+      virtualNodesPerNode: 64,
+    }),
+  },
+  "/stats": {
+    contentType: "application/json",
+    body: JSON.stringify({
+      "cache.get": { Mean: 1.42, Median: 1, Min: 0, Max: 12, Count: 4_521, Sum: 6_419, Variance: 0.85 },
+      "cache.set": { Mean: 2.05, Median: 2, Min: 1, Max: 18, Count: 1_207, Sum: 2_474, Variance: 1.21 },
+    }),
+  },
 };
+
+/**
+ * Synthesises a `DistMetrics` snapshot whose counters grow
+ * with `n` (the call index). Two consecutive calls produce
+ * different values, which is what the Phase B2 ring buffer
+ * needs to compute non-zero rates. Field shapes match
+ * `pkg/backend/dist_memory.go::DistMetrics` exactly so the
+ * UI's zod schema parses them without additions.
+ */
+function makeDistMetrics(n: number) {
+  const k = n + 1;
+  return {
+    ForwardGet: 1000 * k,
+    ForwardSet: 500 * k,
+    ForwardRemove: 50 * k,
+    ReplicaFanoutSet: 1500 * k,
+    ReplicaFanoutRemove: 150 * k,
+    ReplicaGetMiss: 5 * k,
+    ReadRepair: 3 * k,
+    HeartbeatSuccess: 5000 * k,
+    HeartbeatFailure: 12,
+    IndirectProbeSuccess: 4 * k,
+    IndirectProbeFailure: 1,
+    IndirectProbeRefuted: 0,
+    WriteAcks: 800 * k,
+    WriteAttempts: 800 * k + 5,
+    WriteQuorumFailures: 5,
+    Drains: 0,
+    NodesSuspect: 1,
+    NodesDead: 0,
+    NodesRemoved: 0,
+    VersionConflicts: 7,
+    VersionTieBreaks: 2,
+    ReadPrimaryPromote: 1,
+    MembershipVersion: 42,
+    MembersAlive: 4,
+    MembersSuspect: 1,
+    MembersDead: 0,
+    HintedQueued: 30 * k,
+    HintedReplayed: 25 * k,
+    HintedExpired: 0,
+    HintedDropped: 1,
+    HintedGlobalDropped: 0,
+    HintedBytes: 4096 * k,
+    MerkleSyncs: 10 * k,
+    MerkleKeysPulled: 8 * k,
+    MerkleBuildNanos: 1_500_000,
+    MerkleDiffNanos: 800_000,
+    MerkleFetchNanos: 2_000_000,
+    AutoSyncLoops: 50 * k,
+    LastAutoSyncNanos: 5_000_000,
+    LastAutoSyncError: "",
+    TombstonesActive: 12,
+    TombstonesPurged: 88 * k,
+    RebalancedKeys: 100 * k,
+    RebalanceBatches: 5 * k,
+    RebalanceThrottle: 1,
+    RebalanceLastNanos: 1_500_000,
+    RebalancedReplicaDiff: 30 * k,
+    RebalanceReplicaDiffThrottle: 0,
+    RebalancedPrimary: 70 * k,
+  };
+}
