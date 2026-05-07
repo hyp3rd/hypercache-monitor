@@ -29,7 +29,7 @@ repos:
         # `{{ ... }}` Go-template syntax PyYAML can't parse —
         # `helm lint` is the right validator for those.
         exclude: ^(mkdocs\.yml|chart/.*/templates/.*)$
-        args: [--allow-multiple-documents]
+        args: [ --allow-multiple-documents ]
       - id: requirements-txt-fixer
       # - id: no-commit-to-branch
   - repo: https://github.com/gitleaks/gitleaks
@@ -44,7 +44,7 @@ repos:
         # Same exclusion as check-yaml above — Helm templates
         # have their own validator (`helm lint`).
         exclude: ^chart/.*/templates/.*$
-        types: [file, yaml]
+        types: [ file, yaml ]
         entry: yamllint --strict -f parsable
   - repo: https://github.com/hadolint/hadolint
     rev: v2.14.0
@@ -64,7 +64,7 @@ repos:
           - --no-summary
           - --files
           - .git/COMMIT_EDITMSG
-        stages: [commit-msg]
+        stages: [ commit-msg ]
         always_run: true
   - repo: https://github.com/markdownlint/markdownlint.git
     rev: v0.15.0
