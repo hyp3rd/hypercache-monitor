@@ -42,10 +42,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const cluster = getCluster(DEFAULT_CLUSTER_ID);
   if (!cluster) {
-    return NextResponse.json(
-      { error: "no cluster registered", code: "INTERNAL" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "no cluster registered", code: "INTERNAL" }, { status: 500 });
   }
 
   // Probe 1: upstream reachability (no auth required).
@@ -82,16 +79,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
   if (authProbe.status === 401) {
-    return NextResponse.json(
-      { error: "invalid token", code: "UNAUTHORIZED" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "invalid token", code: "UNAUTHORIZED" }, { status: 401 });
   }
   if (authProbe.status === 403) {
-    return NextResponse.json(
-      { error: "token has no Read scope", code: "FORBIDDEN" },
-      { status: 403 },
-    );
+    return NextResponse.json({ error: "token has no Read scope", code: "FORBIDDEN" }, { status: 403 });
   }
   if (!authProbe.ok) {
     return NextResponse.json(

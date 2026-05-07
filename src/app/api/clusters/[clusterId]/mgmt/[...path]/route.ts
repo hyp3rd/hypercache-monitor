@@ -27,10 +27,13 @@ async function handle(req: NextRequest, ctx: RouteContext): Promise<Response> {
   // If a request reaches this catch-all with a control verb,
   // refuse — keeps the admin-gating logic in one place.
   if (segments === "evict" || segments === "trigger-expiration" || segments === "clear") {
-    return new Response(JSON.stringify({ error: "use /mgmt/control/[op] for mutating ops", code: "WRONG_ROUTE" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "use /mgmt/control/[op] for mutating ops", code: "WRONG_ROUTE" }),
+      {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      },
+    );
   }
 
   return proxyToCache(req, {
@@ -39,7 +42,4 @@ async function handle(req: NextRequest, ctx: RouteContext): Promise<Response> {
   });
 }
 
-export {
-  handle as GET,
-  handle as HEAD,
-};
+export { handle as GET, handle as HEAD };

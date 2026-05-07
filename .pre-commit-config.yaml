@@ -8,11 +8,13 @@ repos:
       - id: pretty-format-json
         exclude: |
           (?x)^(
+              .prettierrc.json|
+              components.json|
               cspell.json|
               package.json|
               package-lock.json|
-              components.json|
-              tsconfig.json
+              tsconfig.json|
+              test-results/.last-run.json
           )$
       - id: end-of-file-fixer
       - id: mixed-line-ending

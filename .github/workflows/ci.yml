@@ -1,0 +1,62 @@
+---
+name: ci
+
+# Quality-gate pipeline. Runs `make ci` on every PR and on
+# pushes to main. Mirrors the cache repo's structure so muscle
+# memory and required-status-checks line up between repos.
+#
+# Note: E2E lives in `.github/workflows/e2e.yml` so a flaky
+# browser test doesn't block lint/typecheck signal. The split
+# is deliberate — devs need fast unit-feedback, browsers can
+# take their time.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel in-flight runs on the same ref when a new push lands.
+# Saves CI minutes; the latest commit is always the source of
+# truth for go/no-go.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: make ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Install deps (frozen)
+        # `npm ci` requires a clean install from package-lock.json
+        # and fails if the lockfile drifts — exactly what we want
+        # in CI.
+        run: npm ci
+
+      - name: Run quality gates
+        # The Makefile is the contract per AGENTS.md §4. `make ci`
+        # runs fmt-check + lint + typecheck + test + sec + build
+        # in that order, fail-fast.
+        run: make ci
+        env:
+          # Vitest tests stub these via vi.mock, but
+          # zod env validation in src/env/server.ts requires
+          # them to be present at build time (next build runs
+          # a couple of pages through static analysis).
+          HYPERCACHE_API_URL: http://localhost:8080
+          HYPERCACHE_MGMT_URL: http://localhost:8081
+          IRON_SESSION_SECRET: ci-iron-session-secret-not-for-prod-use-32chars

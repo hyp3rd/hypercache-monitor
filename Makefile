@@ -1,23 +1,120 @@
 include .project-settings.env
 
+# HyperCache Monitor — Makefile is the quality-gate contract.
+#
+# AGENTS.md §4: every target listed here must be wired and
+# green before declaring a task done. `make ci` runs the full
+# gate sequence (fmt-check + lint + typecheck + test + sec +
+# build) and is what CI invokes.
+#
+# Why a Makefile over a single npm script: stable target names
+# across repos (the cache repo uses the same vocabulary), and
+# operators expect `make ci` from muscle memory.
+
 REPO_PREFIX ?= github.com/hyp3rd/hypercache-monitor
-PROTO_ENABLED ?= true
+NODE_VERSION ?= 25
 
-# check_command_exists is a helper function that checks if a command exists.
-define check_command_exists
-@which $(1) > /dev/null 2>&1 || (echo "$(1) command not found" && exit 1)
-endef
+NPM ?= npm
+NPX ?= npx
 
-ifeq ($(call check_command_exists,$(1)),false)
-  $(error "$(1) command not found")
-endif
+# All targets are PHONY — none of them produce a tracked
+# artefact. Splitting them out at the bottom keeps the rule
+# bodies readable.
 
-# help prints a list of available targets and their descriptions.
-help:
-	@echo "Available targets:"
-	@echo
-	@echo "Development commands:"
-	@echo
-	@echo "For more information, see the project README."
+# ---- Help ------------------------------------------------------------
+help: ## Print available targets and their descriptions.
+	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ { printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-.PHONY: help
+# ---- Development -----------------------------------------------------
+# `next build` evaluates server modules during page-data
+# collection — including src/env/server.ts's zod validator.
+# Without env vars present, the validator throws and the build
+# fails. We fall back to safe stubs so `make build` works in a
+# fresh checkout; CI sets the real values via the workflow's
+# `env:` block, and runtime (operator deploy) still requires
+# real env (the stubs aren't baked into the artifact — server
+# env is read at runtime from the live process.env).
+BUILD_ENV = \
+	HYPERCACHE_API_URL=$${HYPERCACHE_API_URL:-http://localhost:8080} \
+	HYPERCACHE_MGMT_URL=$${HYPERCACHE_MGMT_URL:-http://localhost:8081} \
+	IRON_SESSION_SECRET=$${IRON_SESSION_SECRET:-build-time-stub-not-for-production-use-32chars-min}
+
+dev: ## Run the dev server (next dev) on :3000.
+	$(NPM) run dev
+
+build: ## Production build (next build, standalone output).
+	$(BUILD_ENV) $(NPM) run build
+
+start: ## Run the production server (requires a prior `make build`).
+	$(NPM) run start
+
+# ---- Quality gates ---------------------------------------------------
+fmt: ## Auto-format with Prettier.
+	$(NPX) prettier --write .
+
+fmt-check: ## Verify Prettier formatting (CI-friendly; non-zero on diff).
+	$(NPX) prettier --check .
+
+lint: ## Run ESLint flat config.
+	$(NPM) run lint
+
+lint-fix: ## ESLint with --fix.
+	$(NPM) run lint:fix
+
+typecheck: ## TypeScript type-check (no emit).
+	$(NPX) tsc --noEmit
+
+test: ## Vitest unit + component tests.
+	$(NPX) vitest run
+
+test-watch: ## Vitest in watch mode (interactive).
+	$(NPX) vitest
+
+e2e: ## Playwright end-to-end suite.
+	$(NPX) playwright test
+
+# `npm audit` exit codes: 1 on findings >= --audit-level threshold.
+# Two transitive moderate postcss vulns ship with Next 16; the
+# fix would downgrade Next to v9 (breaking). We accept moderate
+# findings until Vercel patches and gate CI on `high+` only.
+sec: ## npm audit for high+ severity findings.
+	$(NPM) audit --audit-level=high
+
+# ---- Codegen ---------------------------------------------------------
+codegen: ## Regenerate the OpenAPI typed client from a running cache cluster.
+	$(NPM) run codegen
+
+# CI gate: regenerate + assert no diff. Surfaces drift between
+# the committed generated code and the live spec the cache
+# binary serves.
+codegen-check: ## Regenerate + fail if the output diff is non-empty.
+	$(NPM) run codegen
+	@git diff --exit-code src/lib/api/generated/ \
+		|| (echo "codegen drift detected; commit the regenerated client"; exit 1)
+
+# ---- Composite -------------------------------------------------------
+# Order matters: format-check first (instant), lint next
+# (fastest of the slow checks), build last (longest). Each
+# step fails fast on its own — no point running `build` if
+# typecheck already errored.
+ci: fmt-check lint typecheck test sec build ## Run every quality gate.
+
+# ---- Local cluster (cross-repo) -------------------------------------
+# Brings up the cache cluster expected to be at the sibling
+# `../hypercache` checkout. If the path is wrong, the call
+# fails loudly — better than silently pointing at a stale
+# binary.
+start-dev-scaled: ## Boot a local 5-node hypercache cluster (sibling repo).
+	@if [ ! -f ../hypercache/docker-compose.cluster.yml ]; then \
+		echo "expected ../hypercache/docker-compose.cluster.yml; clone the cache repo as a sibling"; \
+		exit 1; \
+	fi
+	cd ../hypercache && docker compose -f docker-compose.cluster.yml up -d
+
+stop-dev-scaled: ## Tear down the local cluster.
+	@if [ ! -f ../hypercache/docker-compose.cluster.yml ]; then exit 0; fi
+	cd ../hypercache && docker compose -f docker-compose.cluster.yml down
+
+.PHONY: help dev build start fmt fmt-check lint lint-fix typecheck \
+	test test-watch e2e sec codegen codegen-check ci \
+	start-dev-scaled stop-dev-scaled

@@ -34,23 +34,25 @@ export function ClusterPicker({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-10 gap-3 px-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-muted text-primary">
+          <span className="bg-brand-muted text-primary flex h-7 w-7 items-center justify-center rounded-md">
             <Server aria-hidden className="h-3.5 w-3.5" />
           </span>
           <span className="flex flex-col items-start leading-tight">
-            <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Cluster</span>
+            <span className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase">
+              Cluster
+            </span>
             <span className="font-semibold">{active?.name ?? activeId}</span>
           </span>
-          <span aria-hidden className="mx-1 h-6 w-px bg-border/60" />
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span aria-hidden className="bg-border/60 mx-1 h-6 w-px" />
+          <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
             <User aria-hidden className="h-3 w-3" />
-            <span className="font-mono font-medium text-foreground">{identity}</span>
+            <span className="text-foreground font-mono font-medium">{identity}</span>
           </span>
-          <ChevronsUpDown aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
+          <ChevronsUpDown aria-hidden className="text-muted-foreground h-3.5 w-3.5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
-        <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <DropdownMenuLabel className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
           Active cluster
         </DropdownMenuLabel>
         <DropdownMenuItem disabled className="font-medium">
@@ -59,7 +61,7 @@ export function ClusterPicker({
         {others.length > 0 ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <DropdownMenuLabel className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
               Other clusters
             </DropdownMenuLabel>
             {others.map((c) => (
@@ -69,7 +71,7 @@ export function ClusterPicker({
         ) : (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+            <DropdownMenuItem disabled className="text-muted-foreground text-xs">
               Multi-cluster lands in Phase C.
             </DropdownMenuItem>
           </>

@@ -13,11 +13,11 @@ name: release
 
 on:
   push:
-    tags: ['v*.*.*']
+    tags: ["v*.*.*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to (re)create a release for'
+        description: "Existing tag to (re)create a release for"
         required: true
 
 permissions:

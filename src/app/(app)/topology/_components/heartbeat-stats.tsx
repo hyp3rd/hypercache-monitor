@@ -72,7 +72,7 @@ const toneStyles: Record<Stat["tone"], string> = {
 export function HeartbeatStats({ data }: { data: Heartbeat }) {
   const present = STATS.filter((s) => typeof data[s.key] === "number");
   if (present.length === 0) {
-    return <p className="text-sm text-muted-foreground">No heartbeat metrics reported.</p>;
+    return <p className="text-muted-foreground text-sm">No heartbeat metrics reported.</p>;
   }
 
   const success = (data.heartbeatSuccess ?? 0) as number;
@@ -83,40 +83,55 @@ export function HeartbeatStats({ data }: { data: Heartbeat }) {
   return (
     <div className="space-y-4">
       {successRate !== null && (
-        <div className="flex items-center justify-between rounded-lg bg-muted/40 p-3 ring-1 ring-border/50">
+        <div className="bg-muted/40 ring-border/50 flex items-center justify-between rounded-lg p-3 ring-1">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Probe success rate</p>
+            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              Probe success rate
+            </p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">
               {successRate.toFixed(2)}
-              <span className="ml-0.5 text-base font-normal text-muted-foreground">%</span>
+              <span className="text-muted-foreground ml-0.5 text-base font-normal">%</span>
             </p>
           </div>
-          <div className="text-right text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-right text-xs">
             <p>
-              <span className="font-mono text-foreground">{success.toLocaleString()}</span> / {total.toLocaleString()} probes
+              <span className="text-foreground font-mono">{success.toLocaleString()}</span> /{" "}
+              {total.toLocaleString()} probes
             </p>
           </div>
         </div>
       )}
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Stat tiles render as a list of figures rather than a
+       * <dl>: axe-core's `definition-list`/`dlitem` rules require
+       * `<dt>`/`<dd>` to be direct children (or single-group
+       * wrappers) of `<dl>`, but each tile here mixes label +
+       * value + icon + description, which doesn't fit the
+       * dl/dt/dd shape. <ul role="list"> with <figure> items
+       * carries the same semantics for screen readers without
+       * the structural violation. */}
+      <ul role="list" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {present.map(({ key, label, description, Icon, tone }) => (
-          <div
-            key={String(key)}
-            className="group relative overflow-hidden rounded-lg border border-border/50 bg-card/50 p-3 transition-colors hover:border-border hover:bg-card"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-              <span className={cn("flex h-7 w-7 items-center justify-center rounded-md ring-1", toneStyles[tone])}>
-                <Icon aria-hidden className="h-3.5 w-3.5" />
-              </span>
-            </div>
-            <dd className="mt-2 font-mono text-xl font-semibold tabular-nums">
-              {(data[key] as number).toLocaleString()}
-            </dd>
-            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-          </div>
+          <li key={String(key)}>
+            <figure className="group border-border/50 bg-card/50 hover:border-border hover:bg-card relative overflow-hidden rounded-lg border p-3 transition-colors">
+              <div className="flex items-start justify-between gap-2">
+                <figcaption className="text-muted-foreground text-xs font-medium">{label}</figcaption>
+                <span
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-md ring-1",
+                    toneStyles[tone],
+                  )}
+                >
+                  <Icon aria-hidden className="h-3.5 w-3.5" />
+                </span>
+              </div>
+              <p className="mt-2 font-mono text-xl font-semibold tabular-nums">
+                {(data[key] as number).toLocaleString()}
+              </p>
+              <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+            </figure>
+          </li>
         ))}
-      </dl>
+      </ul>
     </div>
   );
 }

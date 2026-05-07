@@ -32,12 +32,12 @@
    * monospaced ramp.
    */
   --font-sans:
-    var(--font-sans), Roboto, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-serif:
-    var(--font-serif), "Roboto Slab", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    var(--font-sans), Roboto, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial,
+    sans-serif;
+  --font-serif: var(--font-serif), "Roboto Slab", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono:
-    var(--font-mono), "Roboto Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
-    monospace;
+    var(--font-mono), "Roboto Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -133,7 +133,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -148,11 +150,17 @@
    * Tighter tracking on h1/h2 — Roboto Slab's default tracking
    * is generous; the panel benefits from a denser headline.
    */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-serif);
     font-feature-settings: "ss01" 1;
   }
-  h1, h2 {
+  h1,
+  h2 {
     letter-spacing: -0.015em;
   }
 
@@ -193,5 +201,7 @@
 }
 
 .alive-glow {
-  box-shadow: 0 0 0 1px oklch(0.7 0.18 152 / 0.25), 0 0 12px -2px oklch(0.7 0.18 152 / 0.4);
+  box-shadow:
+    0 0 0 1px oklch(0.7 0.18 152 / 0.25),
+    0 0 12px -2px oklch(0.7 0.18 152 / 0.4);
 }

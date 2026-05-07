@@ -78,7 +78,7 @@ export function TopologyClient({ clusterId }: { clusterId: string }) {
       </div>
 
       <div>
-        <Card className="h-full border-border/50 bg-card/60 backdrop-blur">
+        <Card className="border-border/50 bg-card/60 h-full backdrop-blur">
           <CardHeader className="flex-row items-center gap-3 space-y-0">
             <SectionIcon Icon={CircuitBoard} />
             <div>
@@ -99,7 +99,7 @@ export function TopologyClient({ clusterId }: { clusterId: string }) {
 
 function SectionIcon({ Icon }: { Icon: typeof Network }) {
   return (
-    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-muted text-primary ring-1 ring-primary/30">
+    <span className="bg-brand-muted text-primary ring-primary/30 flex h-9 w-9 items-center justify-center rounded-md ring-1">
       <Icon aria-hidden className="h-4 w-4" />
     </span>
   );
@@ -117,7 +117,10 @@ function SkeletonRows({ count }: { count: number }) {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive ring-1 ring-destructive/20" role="alert">
+    <p
+      className="bg-destructive/10 text-destructive ring-destructive/20 rounded-md px-3 py-2 text-sm ring-1"
+      role="alert"
+    >
       {message}
     </p>
   );

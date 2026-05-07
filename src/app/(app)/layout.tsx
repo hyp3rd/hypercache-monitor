@@ -25,13 +25,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const clusters = listClusters().map((c) => ({ id: c.id, name: c.name }));
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside className="flex w-60 flex-col border-r border-border/60 bg-card/40 backdrop-blur">
+    <div className="bg-background flex min-h-screen">
+      <aside className="border-border/60 bg-card/40 flex w-60 flex-col border-r backdrop-blur">
         <div className="flex h-16 items-center gap-3 px-5">
           <BrandMark size={32} />
           <div>
-            <h2 className="text-sm font-semibold leading-none tracking-tight">HyperCache</h2>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Monitor</p>
+            <h2 className="text-sm leading-none font-semibold tracking-tight">HyperCache</h2>
+            <p className="text-muted-foreground mt-1 text-[11px] tracking-[0.18em] uppercase">Monitor</p>
           </div>
         </div>
         <Separator className="bg-border/50" />
@@ -58,21 +58,30 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             API spec
           </NavLink>
         </nav>
-        <div className="border-t border-border/50 p-3 text-[11px] text-muted-foreground">
+        <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
           <p className="font-mono">v0.1.0 · Phase A</p>
           <p className="mt-1">Read-only Topology surface. Phase B unlocks Keys, Metrics, Bulk.</p>
         </div>
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-border/60 bg-card/40 px-6 backdrop-blur">
+        <header className="border-border/60 bg-card/40 flex h-16 items-center justify-between border-b px-6 backdrop-blur">
           <ClusterPicker clusters={clusters} activeId={auth.clusterId} identity={auth.session.identity} />
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <LogoutButton />
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6 lg:p-8">{children}</main>
+        {/* tabIndex=0 puts the scrollable main into the keyboard
+         * tab order, satisfying axe-core's
+         * `scrollable-region-focusable` rule. After tabbing to
+         * the region, keyboard users press arrow keys to scroll
+         * long pages — the WCAG-prescribed pattern. tabIndex=-1
+         * isn't enough; the rule explicitly requires the region
+         * to be reachable via Tab. */}
+        <main tabIndex={0} aria-label="Main content" className="flex-1 overflow-auto p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );
@@ -80,7 +89,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
 function NavSection({ label }: { label: string }) {
   return (
-    <p className="px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+    <p className="text-muted-foreground/80 px-3 pt-1 pb-1.5 text-[10px] font-semibold tracking-[0.18em] uppercase">
       {label}
     </p>
   );
@@ -101,11 +110,11 @@ function NavLink({
     return (
       <span
         aria-disabled="true"
-        className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground/70"
+        className="text-muted-foreground/70 flex items-center gap-2.5 rounded-md px-3 py-2 text-sm"
       >
         {icon}
         <span className="flex-1">{children}</span>
-        <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+        <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 font-mono text-[9px] tracking-wider uppercase">
           B
         </span>
       </span>
@@ -114,7 +123,7 @@ function NavLink({
   return (
     <Link
       href={href as never}
-      className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-accent hover:text-accent-foreground"
+      className="text-foreground/85 hover:bg-accent hover:text-accent-foreground flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors"
     >
       {icon}
       {children}

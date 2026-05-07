@@ -20,7 +20,9 @@ const schema = z.object({
   // iron-session secret for sealing the auth cookie. Must be at
   // least 32 chars per iron-session's own validation. Generate via
   // `openssl rand -base64 48` and ship as a k8s secret.
-  IRON_SESSION_SECRET: z.string().min(32, "IRON_SESSION_SECRET must be >=32 chars; generate with `openssl rand -base64 48`"),
+  IRON_SESSION_SECRET: z
+    .string()
+    .min(32, "IRON_SESSION_SECRET must be >=32 chars; generate with `openssl rand -base64 48`"),
 
   // Cookie name; override only when running multiple instances
   // on the same hostname. Defaults to `hcm_session`.

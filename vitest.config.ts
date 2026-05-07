@@ -14,12 +14,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
-    exclude: [
-      "node_modules/**",
-      ".next/**",
-      "src/lib/api/generated/**",
-      "tests/e2e/**",
-    ],
+    exclude: ["node_modules/**", ".next/**", "src/lib/api/generated/**", "tests/e2e/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
@@ -34,6 +29,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
+      // Next.js `import "server-only"` is a compile-time guard
+      // that doesn't exist as a real module. Alias to an empty
+      // stub so tests can exercise server-only code without the
+      // resolver erroring.
+      "server-only": resolve(__dirname, "./src/test/server-only-stub.ts"),
     },
   },
 });

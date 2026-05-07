@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="grid-backdrop relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-6">
+    <main className="grid-backdrop bg-background relative flex min-h-screen items-center justify-center overflow-hidden p-6">
       {/* Soft brand glow behind the card */}
       <div
         aria-hidden
@@ -19,12 +19,12 @@ export default function LoginPage() {
         <div className="mb-8 flex flex-col items-center text-center">
           <BrandMark size={56} className="brand-glow" />
           <h1 className="mt-5 text-2xl font-semibold tracking-tight">HyperCache Monitor</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             Operator control panel for distributed cache clusters.
           </p>
         </div>
         <LoginForm />
-        <p className="mt-6 text-center text-xs text-muted-foreground">
+        <p className="text-muted-foreground mt-6 text-center text-xs">
           Tokens are issued out-of-band by your cluster operator.{" "}
           <span className="font-mono">HYPERCACHE_AUTH_CONFIG</span> defines available identities.
         </p>

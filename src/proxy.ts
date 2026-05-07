@@ -41,5 +41,12 @@ export const config = {
   // segment doesn't appear in URLs (it's a parens grouping), so
   // we list the surface paths directly. New surfaces in Phase B
   // must be added here.
-  matcher: ["/topology/:path*", "/keys/:path*", "/metrics/:path*", "/bulk/:path*", "/auth-info/:path*", "/spec/:path*"],
+  matcher: [
+    "/topology/:path*",
+    "/keys/:path*",
+    "/metrics/:path*",
+    "/bulk/:path*",
+    "/auth-info/:path*",
+    "/spec/:path*",
+  ],
 };

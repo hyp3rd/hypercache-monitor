@@ -25,11 +25,4 @@ async function handle(req: NextRequest, ctx: RouteContext): Promise<Response> {
   });
 }
 
-export {
-  handle as GET,
-  handle as POST,
-  handle as PUT,
-  handle as DELETE,
-  handle as HEAD,
-  handle as PATCH,
-};
+export { handle as GET, handle as POST, handle as PUT, handle as DELETE, handle as HEAD, handle as PATCH };

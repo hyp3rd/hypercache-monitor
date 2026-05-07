@@ -48,7 +48,7 @@ export function RingSvg({ data }: { data: ClusterRing }) {
   }, [data.vnodes]);
 
   if (data.vnodes.length === 0) {
-    return <p className="text-sm text-muted-foreground">No vnodes registered.</p>;
+    return <p className="text-muted-foreground text-sm">No vnodes registered.</p>;
   }
 
   // Layout: ring with vnodes at evenly-spaced angles. The order
@@ -79,9 +79,35 @@ export function RingSvg({ data }: { data: ClusterRing }) {
             ))}
           </defs>
           {/* Concentric rings as visual anchor */}
-          <circle cx={center} cy={center} r={radius + 6} fill="none" stroke="var(--border)" strokeWidth={1} strokeDasharray="2 4" opacity={0.4} />
-          <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--border)" strokeWidth={1} opacity={0.7} />
-          <circle cx={center} cy={center} r={radius - 6} fill="none" stroke="var(--border)" strokeWidth={1} strokeDasharray="2 4" opacity={0.4} />
+          <circle
+            cx={center}
+            cy={center}
+            r={radius + 6}
+            fill="none"
+            stroke="var(--border)"
+            strokeWidth={1}
+            strokeDasharray="2 4"
+            opacity={0.4}
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="var(--border)"
+            strokeWidth={1}
+            opacity={0.7}
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={radius - 6}
+            fill="none"
+            stroke="var(--border)"
+            strokeWidth={1}
+            strokeDasharray="2 4"
+            opacity={0.4}
+          />
           {/* Cardinal tick marks every quarter — clock-face read */}
           {[0, 90, 180, 270].map((deg) => {
             const a = (deg - 90) * (Math.PI / 180);
@@ -89,7 +115,18 @@ export function RingSvg({ data }: { data: ClusterRing }) {
             const y1 = center + (radius - 10) * Math.sin(a);
             const x2 = center + (radius + 10) * Math.cos(a);
             const y2 = center + (radius + 10) * Math.sin(a);
-            return <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--muted-foreground)" strokeWidth={1.5} opacity={0.4} />;
+            return (
+              <line
+                key={deg}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="var(--muted-foreground)"
+                strokeWidth={1.5}
+                opacity={0.4}
+              />
+            );
           })}
           {data.vnodes.map((v, i) => {
             const angle = i * step - Math.PI / 2;
@@ -101,7 +138,13 @@ export function RingSvg({ data }: { data: ClusterRing }) {
                 {/* Glow layer */}
                 <circle cx={x} cy={y} r={6} fill={color} opacity={0.25} />
                 {/* Main vnode dot */}
-                <circle cx={x} cy={y} r={3.5} fill={color} aria-label={`vnode ${i + 1} of ${data.vnodes.length} owned by ${v.ownerId}`}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={3.5}
+                  fill={color}
+                  aria-label={`vnode ${i + 1} of ${data.vnodes.length} owned by ${v.ownerId}`}
+                >
                   <title>{`${v.ownerId} · ${v.hash.slice(0, 12)}…`}</title>
                 </circle>
               </g>
@@ -133,12 +176,15 @@ export function RingSvg({ data }: { data: ClusterRing }) {
           const owned = data.vnodes.filter((v) => v.ownerId === id).length;
           const pct = ((owned / data.vnodes.length) * 100).toFixed(1);
           return (
-            <li key={id} className="flex items-center justify-between gap-2 rounded-md bg-muted/30 px-2.5 py-1.5">
+            <li
+              key={id}
+              className="bg-muted/30 flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5"
+            >
               <span className="flex items-center gap-2">
                 <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
                 <span className="font-mono font-medium">{id}</span>
               </span>
-              <span className="font-mono tabular-nums text-muted-foreground">
+              <span className="text-muted-foreground font-mono tabular-nums">
                 {owned} <span className="text-muted-foreground/60">/ {pct}%</span>
               </span>
             </li>

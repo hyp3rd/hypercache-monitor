@@ -16,12 +16,12 @@ export default async function TopologyPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Cluster</p>
+          <p className="text-muted-foreground text-[11px] font-medium tracking-[0.18em] uppercase">Cluster</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">Topology</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
             Live membership, ring distribution, and heartbeat health for{" "}
-            <span className="font-mono font-semibold text-foreground">{auth.clusterId}</span>. Active polling every 2 seconds —
-            paused while the tab is hidden.
+            <span className="text-foreground font-mono font-semibold">{auth.clusterId}</span>. Active polling
+            every 2 seconds — paused while the tab is hidden.
           </p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-500 ring-1 ring-emerald-500/20">

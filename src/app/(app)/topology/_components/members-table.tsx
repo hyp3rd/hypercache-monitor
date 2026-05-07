@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ClusterMembers, MemberState } from "@/lib/api/mgmt";
 import { cn } from "@/lib/utils";
 
@@ -60,10 +53,10 @@ export function MembersTable({ data }: { data: ClusterMembers }) {
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-1.5 text-xs">
           <span className="text-muted-foreground">Replication factor</span>
-          <span className="font-mono font-semibold text-foreground">{data.replication}</span>
+          <span className="text-foreground font-mono font-semibold">{data.replication}</span>
           <span className="text-muted-foreground/40">·</span>
           <span className="text-muted-foreground">vnodes / node</span>
-          <span className="font-mono font-semibold text-foreground">{data.virtualNodes}</span>
+          <span className="text-foreground font-mono font-semibold">{data.virtualNodes}</span>
         </div>
         <div className="flex items-center gap-2">
           {(Object.entries(counts) as Array<[MemberState, number]>)
@@ -72,7 +65,7 @@ export function MembersTable({ data }: { data: ClusterMembers }) {
               <span
                 key={state}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-xs font-medium ring-1",
+                  "bg-muted/50 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1",
                   stateStyles[state].ring,
                   stateStyles[state].text,
                 )}
@@ -84,7 +77,7 @@ export function MembersTable({ data }: { data: ClusterMembers }) {
             ))}
         </div>
       </header>
-      <div className="overflow-hidden rounded-lg border border-border/50">
+      <div className="border-border/50 overflow-hidden rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -104,13 +97,13 @@ export function MembersTable({ data }: { data: ClusterMembers }) {
                     <span aria-hidden className={cn("inline-block h-2.5 w-2.5 rounded-full", style.dot)} />
                   </TableCell>
                   <TableCell>
-                    <div className="font-mono text-xs font-semibold text-foreground">{m.id}</div>
+                    <div className="text-foreground font-mono text-xs font-semibold">{m.id}</div>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{m.address}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs">{m.address}</TableCell>
                   <TableCell>
                     <span className={cn("text-xs font-medium", style.text)}>{style.label}</span>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-right font-mono text-xs tabular-nums">
                     {m.incarnation.toLocaleString()}
                   </TableCell>
                 </TableRow>

@@ -46,17 +46,20 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="border-border/50 bg-card/60 backdrop-blur shadow-2xl shadow-violet-500/5">
+    <Card className="border-border/50 bg-card/60 shadow-2xl shadow-violet-500/5 backdrop-blur">
       <CardHeader>
         <CardTitle className="flex items-center gap-2.5 text-base">
-          <KeyRound aria-hidden className="h-4 w-4 text-primary" />
+          <KeyRound aria-hidden className="text-primary h-4 w-4" />
           Sign in with bearer token
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form id="login-form" onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="token" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="token"
+              className="text-muted-foreground text-xs font-medium tracking-wider uppercase"
+            >
               Token
             </Label>
             <Input
@@ -77,7 +80,7 @@ export function LoginForm() {
           {error !== null && (
             <p
               id="login-error"
-              className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive ring-1 ring-destructive/20"
+              className="bg-destructive/10 text-destructive ring-destructive/20 rounded-md px-3 py-2 text-sm ring-1"
               role="alert"
             >
               {error}
@@ -86,7 +89,12 @@ export function LoginForm() {
         </form>
       </CardContent>
       <CardFooter>
-        <Button form="login-form" type="submit" disabled={pending || token.length === 0} className="w-full gap-2">
+        <Button
+          form="login-form"
+          type="submit"
+          disabled={pending || token.length === 0}
+          className="w-full gap-2"
+        >
           {pending ? (
             <>
               <Loader2 aria-hidden className="h-4 w-4 animate-spin" />

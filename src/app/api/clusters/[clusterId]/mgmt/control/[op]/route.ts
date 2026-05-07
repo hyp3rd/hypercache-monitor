@@ -33,10 +33,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<Respons
   const { op } = await ctx.params;
 
   if (!ALLOWED_OPS.has(op)) {
-    return NextResponse.json(
-      { error: `unknown control op: ${op}`, code: "BAD_REQUEST" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: `unknown control op: ${op}`, code: "BAD_REQUEST" }, { status: 400 });
   }
 
   // Phase A: 501. See module doc for rationale.
