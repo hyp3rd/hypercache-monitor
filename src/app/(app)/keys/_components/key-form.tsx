@@ -11,7 +11,7 @@ import { Loader2, Save } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { toast } from "sonner";
 
-const TTL_PATTERN = /^[0-9]+(\.[0-9]+)?(?:(?:n|u|µ|m)s?|[sh])+$/;
+const TTL_PATTERN = /^[0-9]+(\.[0-9]+)?(?:(?:ns|us|µs|ms|s|m|h))+$/;
 
 /**
  * PUT form for a single key. Two inputs:

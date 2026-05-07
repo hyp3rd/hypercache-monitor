@@ -26,7 +26,7 @@ import { useSyncExternalStore } from "react";
  * and the next-themes README's "Avoid Hydration Mismatch"
  * section.
  */
-const subscribe = () => () => { };
+const subscribe = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 

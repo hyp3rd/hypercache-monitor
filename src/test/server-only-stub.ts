@@ -9,4 +9,4 @@
 //
 // Wired via `vitest.config.ts`'s `resolve.alias["server-only"]`.
 
-export { };
+export {};
