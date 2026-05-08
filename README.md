@@ -1,8 +1,10 @@
 # HyperCache Monitor
 
 Operator control panel for [HyperCache](https://github.com/hyp3rd/hypercache)
-distributed cache clusters. Read-only Topology surface today; Single-Key
-Inspector, Metrics, and Bulk Operations land in Phase B.
+distributed cache clusters. **v0.6.0 · Phase B complete** — Topology,
+Single-Key Inspector, Metrics, Bulk operations, Auth posture, and Live API
+spec are all shipped. Phase C (multi-cluster, SSE topology, eviction controls,
+OIDC) is next.
 
 ## Architecture
 
@@ -37,7 +39,8 @@ sealed cookie + injects an `X-Request-Id` for cross-process correlation.
 - **shadcn/ui + Tailwind v4** (CSS-first config, no `tailwind.config.js`)
 - **iron-session v8** for the auth cookie
 - **TanStack Query v5** for client-side polling (2s active / 30s idle)
-- **Recharts** via shadcn/ui charts (Phase B)
+- **Recharts** via shadcn/ui charts for the Metrics dashboard
+- **TanStack Table v8** for the Bulk-operations results tables
 - **Hey API** (`@hey-api/openapi-ts`) for typed clients off the cache's OpenAPI 3.1 spec
 - **Vitest + Playwright + axe-core** for tests
 - Self-hosted **Roboto / Roboto Slab / Roboto Mono** via `next/font/google`
@@ -96,8 +99,8 @@ Individual gates while iterating:
 | `make fmt-check` | Verify formatting (CI-friendly).                            |
 | `make lint`      | ESLint flat config.                                         |
 | `make typecheck` | `tsc --noEmit`.                                             |
-| `make test`      | Vitest unit + component tests (28 tests).                   |
-| `make e2e`       | Playwright + axe-core (3 scenarios).                        |
+| `make test`      | Vitest unit + component tests (119 tests across 15 files).  |
+| `make e2e`       | Playwright + axe-core (14 scenarios across 5 spec files).   |
 | `make sec`       | `npm audit --audit-level=high`.                             |
 | `make build`     | Production build (`next build`, standalone output).         |
 | `make codegen`   | Regenerate the typed OpenAPI client from a running cluster. |
@@ -120,14 +123,22 @@ mutating routes through the UI.
 
 ## Roadmap
 
-| Phase | Surfaces                                                                          | Status  |
-| ----- | --------------------------------------------------------------------------------- | ------- |
-| **A** | Bootstrap + auth shell + **Topology** (members / ring / heartbeat)                | shipped |
-| **B** | Single-Key Inspector / Metrics / Bulk Ops / Auth Posture / Spec viewer            | next    |
-| **C** | Multi-cluster registry / SSE for live topology / Eviction Controls / auth.js OIDC | future  |
+| Phase  | Surfaces                                                                          | Status  |
+| ------ | --------------------------------------------------------------------------------- | ------- |
+| **A**  | Bootstrap + auth shell + **Topology** (members / ring / heartbeat)                | shipped |
+| **B1** | Single-Key Inspector (`/keys`)                                                    | shipped |
+| **B2** | Metrics dashboard (`/metrics`) — sparklines + ring-buffer rate math               | shipped |
+| **B3** | Bulk operations (`/bulk`) — chunked CSV import + multi-key fetch + bulk delete    | shipped |
+| **B4** | Auth posture viewer (`/auth-info`) — identity, scopes, OpenAPI security schemes   | shipped |
+| **B5** | Live API spec viewer (`/spec`) — read-only docs renderer                          | shipped |
+| **C**  | Multi-cluster registry / SSE for live topology / Eviction Controls / auth.js OIDC | future  |
 
 The Phase C "SSE for live topology" item is blocked on the cache repo growing
 a `GET /cluster/events` endpoint. Tracked there.
+
+For wire-contract verification against a live cluster, see
+[`scripts/`](scripts/) — `smoke-bulk.sh` exercises the batch endpoints end
+to end. Run as `make smoke-bulk` after `make start-dev-scaled`.
 
 ## Auth posture
 
@@ -144,23 +155,41 @@ a `GET /cluster/events` endpoint. Tracked there.
 src/
 ├── app/                              # Next.js App Router
 │   ├── (app)/                        # Authenticated routes
-│   │   └── topology/                 # Phase A's surface
+│   │   ├── topology/                 # Phase A — members / ring / heartbeat
+│   │   ├── keys/                     # Phase B1 — Single-Key Inspector
+│   │   ├── metrics/                  # Phase B2 — sparklines dashboard
+│   │   ├── bulk/                     # Phase B3 — Fetch / Put / Delete tabs
+│   │   ├── auth-info/                # Phase B4 — Auth posture viewer
+│   │   └── spec/                     # Phase B5 — Live API spec
 │   ├── (auth)/login/                 # Bearer-token sign-in
 │   └── api/clusters/[clusterId]/     # Proxy to cache (api + mgmt + control)
-├── components/                       # shadcn/ui + custom (brand, theme, etc.)
+├── components/                       # shadcn/ui + brand / theme / data-table
 ├── env/                              # zod-validated process.env
 ├── lib/
-│   ├── api/                          # proxy.ts + mgmt.ts wrapper + generated/
-│   ├── auth/session.ts               # iron-session config
+│   ├── api/                          # proxy.ts + mgmt.ts + bulk.ts + metrics.ts
+│   │                                 #   + spec.ts + spec-raw.ts + keys.ts
+│   │                                 #   + generated/ (Hey API)
+│   ├── auth/                         # iron-session config + scope catalog
+│   ├── bulk/chunk.ts                 # streaming chunk-and-aggregate helper
 │   ├── clusters/                     # cluster registry (single in A, multi in C)
+│   ├── csv/                          # RFC 4180 parser + serializer
+│   ├── metrics/                      # ring buffer + polling hook
 │   └── query/                        # TanStack Query provider + keys + poll
 └── proxy.ts                          # Next 16 edge proxy (formerly middleware)
+
+scripts/
+└── smoke-bulk.sh                     # wire-contract smoke against live cluster
 
 tests/
 └── e2e/
     ├── fixtures/cache-stub.ts        # node:http stand-in for the cache
     ├── global-setup.ts               # boots the stub
-    └── topology.spec.ts              # 3 scenarios + axe-core
+    ├── topology.spec.ts              # 3 scenarios + axe-core
+    ├── keys.spec.ts                  # 2 scenarios — single-key round trip
+    ├── metrics.spec.ts               # 2 scenarios — dashboard + a11y
+    ├── bulk.spec.ts                  # 2 scenarios — round trip + a11y
+    ├── auth-info.spec.ts             # 3 scenarios — identity + token-never-shown
+    └── spec.spec.ts                  # 2 scenarios — renderer + a11y
 ```
 
 ## License

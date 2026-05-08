@@ -6,6 +6,8 @@ codegen
 Colada
 dlitem
 Fanout
+FOUC
+GHSA
 govulncheck
 hrefs
 httpauth
@@ -27,6 +29,7 @@ sparkline
 sparklines
 Subcomponents
 Synthesises
+tolower
 topbar
 unstub
 Viam
