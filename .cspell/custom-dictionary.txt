@@ -10,6 +10,7 @@ govulncheck
 hrefs
 httpauth
 hypercache
+invokable
 laggier
 libgbm
 libxcb
@@ -24,6 +25,7 @@ shadcn
 softprops
 sparkline
 sparklines
+Subcomponents
 Synthesises
 topbar
 unstub

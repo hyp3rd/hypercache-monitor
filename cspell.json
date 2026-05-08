@@ -1,10 +1,6 @@
 {
   "version": "0.2",
-  "ignorePaths": [
-    ".gitignore",
-    ".dockerignore",
-    ".project-settings.env"
-  ],
+  "ignorePaths": [".gitignore", ".dockerignore", ".project-settings.env"],
   "dictionaryDefinitions": [
     {
       "name": "custom-dictionary",
@@ -12,19 +8,8 @@
       "addWords": true
     }
   ],
-  "dictionaries": [
-    "custom-dictionary"
-  ],
-  "words": [
-    "autobuild",
-    "buildx",
-    "EDITMSG",
-    "Healthz",
-    "mkdocs",
-    "nolint",
-    "subshell",
-    "Vercel"
-  ],
+  "dictionaries": ["custom-dictionary"],
+  "words": ["autobuild", "buildx", "EDITMSG", "Healthz", "mkdocs", "nolint", "subshell", "Vercel"],
   "ignoreWords": [],
   "import": []
 }

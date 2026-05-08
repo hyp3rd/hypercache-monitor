@@ -51,17 +51,17 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
           <div className="mt-2" />
           <NavSection label="Reference" />
-          <NavLink href="/auth-info" icon={<ShieldCheck aria-hidden className="h-4 w-4" />} disabled>
+          <NavLink href="/auth-info" icon={<ShieldCheck aria-hidden className="h-4 w-4" />}>
             Auth posture
           </NavLink>
-          <NavLink href="/spec" icon={<FileCode2 aria-hidden className="h-4 w-4" />} disabled>
+          <NavLink href="/spec" icon={<FileCode2 aria-hidden className="h-4 w-4" />}>
             API spec
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.4.0 · Phase B (in progress)</p>
+          <p className="font-mono">v0.6.0 · Phase B complete</p>
           <p className="mt-1">
-            Single-Key Inspector, Metrics, and Bulk live. Auth posture, Spec viewer to follow.
+            All Phase B surfaces live: Single-Key Inspector, Metrics, Bulk, Auth posture, API spec.
           </p>
         </div>
       </aside>

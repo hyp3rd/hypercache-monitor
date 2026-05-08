@@ -383,7 +383,52 @@ function closeServer(server: Server): Promise<void> {
 const FIXTURES: Record<string, { contentType: string; body: string }> = {
   "/v1/openapi.yaml": {
     contentType: "application/yaml",
-    body: "openapi: 3.1.0\ninfo:\n  title: Stub\n  version: 0.1.0\npaths: {}\n",
+    // Minimal but realistic — covers the Phase B4 Auth Posture
+    // page (securitySchemes) and Phase B5 Spec Viewer (paths
+    // entries with one read + one write so the read-only filter
+    // has something to drop). Mirrors the production cache's
+    // shape closely enough that a regression in the filter or
+    // in Scalar's parser would surface here.
+    body: [
+      "openapi: 3.1.0",
+      "info:",
+      "  title: HyperCache (stub)",
+      "  version: 0.0.0-stub",
+      "  description: E2E stub for the monitor's Auth Posture and Spec Viewer surfaces.",
+      "paths:",
+      "  /v1/cache/{key}:",
+      "    get:",
+      "      summary: Fetch a key's value and metadata.",
+      "      operationId: getCacheKey",
+      "      tags: [cache]",
+      "      parameters:",
+      "        - name: key",
+      "          in: path",
+      "          required: true",
+      "          schema: { type: string }",
+      "      responses:",
+      "        '200': { description: 'Found.' }",
+      "        '404': { description: 'Not found.' }",
+      "    delete:",
+      "      summary: Delete a key from the cluster.",
+      "      operationId: deleteCacheKey",
+      "      tags: [cache]",
+      "      parameters:",
+      "        - name: key",
+      "          in: path",
+      "          required: true",
+      "          schema: { type: string }",
+      "      responses:",
+      "        '200': { description: 'Deleted.' }",
+      "components:",
+      "  securitySchemes:",
+      "    bearerAuth:",
+      "      type: http",
+      "      scheme: bearer",
+      "      bearerFormat: opaque-token",
+      "      description: Bearer token; constant-time compared on the server.",
+      "",
+    ].join("\n"),
   },
   "/v1/owners/__probe__": {
     contentType: "application/json",
