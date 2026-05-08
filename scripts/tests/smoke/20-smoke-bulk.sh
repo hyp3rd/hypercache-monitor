@@ -171,7 +171,7 @@ post_json() {
 		"$API_URL$path") || curl_exit=$?
 	if [[ $curl_exit -ne 0 ]]; then
 		log_fail "curl failed (exit $curl_exit) on POST $path — likely timeout (>${REQ_TIMEOUT}s) or connection refused"
-		: > /tmp/hyp-bulk-body.json
+		: >/tmp/hyp-bulk-body.json
 		LAST_STATUS="000"
 	fi
 }
@@ -208,7 +208,8 @@ assert_jq() {
 log_info "1. batch/put — three items + two error cases"
 
 # "hello" base64 = aGVsbG8=
-put_body=$(cat <<EOF
+put_body=$(
+	cat <<EOF
 {
 	"items": [
 		{"key": "${PREFIX}-text", "value": "hello world"},
@@ -261,7 +262,8 @@ echo
 
 log_info "2. batch/get — three found, one missing"
 
-get_body=$(cat <<EOF
+get_body=$(
+	cat <<EOF
 {
 	"keys": ["${PREFIX}-text", "${PREFIX}-bin", "${PREFIX}-ttl", "${PREFIX}-does-not-exist"]
 }
@@ -284,9 +286,16 @@ assert_jq '.results[0].value_encoding' "base64" "text key carries value_encoding
 # (Single-node clusters return one entry; both shapes are fine.)
 assert_jq '.results[0].owners | length >= 1' "true" "owners array populated"
 
-# TTL'd item carries ttl_ms (positive) + version
+# TTL'd item carries ttl_ms (positive) + version (when present).
+# `Version` on `batchGetResult` is JSON-tagged `omitempty` in
+# `cmd/hypercache-server/main.go`, so items at version 0 are
+# omitted from the response entirely — `.version` evaluates to
+# null. Assert "either absent or a non-negative integer" rather
+# than `>= 1`, which silently flunked items that were freshly
+# inserted (version 0) on a long-running cluster.
 assert_jq '.results[2].ttl_ms > 0' "true" "TTL'd item carries positive ttl_ms"
-assert_jq '.results[2].version >= 1' "true" "TTL'd item has version >= 1"
+assert_jq '.results[2] | (has("version") | not) or (.version >= 0)' "true" \
+	"TTL'd item version is non-negative when present"
 echo
 
 # ---- 3. Empty-keys edge case ---------------------------------------
@@ -303,7 +312,8 @@ echo
 
 log_info "4. batch/delete — three keys"
 
-del_body=$(cat <<EOF
+del_body=$(
+	cat <<EOF
 {
 	"keys": ["${PREFIX}-text", "${PREFIX}-bin", "${PREFIX}-ttl"]
 }

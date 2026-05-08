@@ -5,6 +5,7 @@ cmdk
 codegen
 Colada
 dlitem
+execve
 Fanout
 FOUC
 GHSA
@@ -22,6 +23,7 @@ Mgmt
 misrouted
 nums
 nvmrc
+omitempty
 papaparse
 shadcn
 softprops
