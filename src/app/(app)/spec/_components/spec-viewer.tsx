@@ -22,7 +22,7 @@
  */
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -101,10 +101,15 @@ function SpecInfoCard({ info }: { info: Record<string, unknown> }) {
   return (
     <Card className="border-border/50 bg-card/60 backdrop-blur">
       <CardHeader>
-        <CardTitle className="flex flex-wrap items-baseline gap-2">
+        {/* Real <h2> — sits under the page's <h1> "API spec" and
+            above each operation's <h3> summary. shadcn's CardTitle
+            is a <div>, which makes screen-reader navigation by
+            heading skip the spec-info / operation hierarchy and
+            denies E2E `getByRole('heading', …)` selectors. */}
+        <h2 className="flex flex-wrap items-baseline gap-2 text-lg leading-none font-semibold">
           <span>{title}</span>
           {version && <span className="text-muted-foreground font-mono text-xs">v{version}</span>}
-        </CardTitle>
+        </h2>
         {description && <CardDescription className="mt-1">{description}</CardDescription>}
       </CardHeader>
     </Card>
@@ -137,7 +142,10 @@ function OperationCard({ op }: { op: ResolvedOperation }) {
               ))}
         </div>
         {typeof op.operation.summary === "string" && (
-          <CardTitle className="text-base">{op.operation.summary}</CardTitle>
+          // Real <h3> — see comment in SpecInfoCard for the reason
+          // (CardTitle is a <div>; we want the heading hierarchy
+          // page <h1> → spec-info <h2> → per-operation <h3>).
+          <h3 className="text-base leading-none font-semibold">{op.operation.summary}</h3>
         )}
         {typeof op.operation.description === "string" && (
           <CardDescription className="whitespace-pre-line">{op.operation.description}</CardDescription>
