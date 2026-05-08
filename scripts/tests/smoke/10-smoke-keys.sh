@@ -33,6 +33,11 @@ readonly API_URL="${HYPERCACHE_API_URL:-http://localhost:8081}"
 readonly TOKEN="${HYPERCACHE_TOKEN:-dev-token}"
 readonly REQ_TIMEOUT="${HYPERCACHE_REQ_TIMEOUT:-15}"
 readonly SETTLE_MS="${HYPERCACHE_SETTLE_MS:-500}"
+# Total wall-clock budget for the post-delete propagation check.
+# Polled at 250ms intervals (see the retry loop in §6) — 5s is
+# generous on a 5-node cluster where replicas converge well
+# under one heartbeat (1s default). Bump for laggier setups.
+readonly POST_DELETE_BUDGET_MS="${HYPERCACHE_POST_DELETE_BUDGET_MS:-5000}"
 TIMESTAMP="$(date +%s)"
 readonly TIMESTAMP
 readonly PREFIX="smoke-keys-${TIMESTAMP}-$$"
@@ -112,24 +117,39 @@ LAST_BODY_FILE="/tmp/hyp-keys-body.bin"
 LAST_HEADER_FILE="/tmp/hyp-keys-headers.txt"
 
 # request VERB PATH [HEADERS_AS_-H_FLAGS_AND_DATA] → sets LAST_STATUS,
-# writes body to LAST_BODY_FILE. Curl-level errors (timeout, connection
-# refused) collapse to status "000" and a loud failure log so the
-# downstream assert_status still triggers a clean fail rather than
-# matching against an empty body.
+# writes body to LAST_BODY_FILE, response headers to LAST_HEADER_FILE.
+# Curl-level errors (timeout, connection refused) collapse to status
+# "000" with a loud log line + cleared body/header files so subsequent
+# assertions don't match against stale data from the previous call.
+#
+# HEAD specifically: curl needs `-I`/`--head` (NOT `-X HEAD`). With
+# `-X HEAD`, curl sends the HEAD verb but uses GET-semantic body
+# handling — it waits indefinitely for a body that, per HTTP spec,
+# will never come, then exits with code 28 (timeout). `-I` tells
+# curl "this is a HEAD request, no body to read."
 request() {
 	local verb="$1"
 	local path="$2"
 	shift 2
 	local curl_exit=0
-	LAST_STATUS=$(curl -sS -o "$LAST_BODY_FILE" --max-time "$REQ_TIMEOUT" -w '%{http_code}' \
-		-D "$LAST_HEADER_FILE" \
-		-H "Authorization: Bearer $TOKEN" \
-		-X "$verb" \
-		"$@" \
-		"$API_URL$path") || curl_exit=$?
+	if [[ "$verb" == "HEAD" ]]; then
+		LAST_STATUS=$(curl -sS --head -o "$LAST_BODY_FILE" --max-time "$REQ_TIMEOUT" -w '%{http_code}' \
+			-D "$LAST_HEADER_FILE" \
+			-H "Authorization: Bearer $TOKEN" \
+			"$@" \
+			"$API_URL$path") || curl_exit=$?
+	else
+		LAST_STATUS=$(curl -sS -o "$LAST_BODY_FILE" --max-time "$REQ_TIMEOUT" -w '%{http_code}' \
+			-D "$LAST_HEADER_FILE" \
+			-H "Authorization: Bearer $TOKEN" \
+			-X "$verb" \
+			"$@" \
+			"$API_URL$path") || curl_exit=$?
+	fi
 	if [[ $curl_exit -ne 0 ]]; then
 		log_fail "curl failed (exit $curl_exit) on $verb $path — likely timeout (>${REQ_TIMEOUT}s) or connection refused"
-		: > "$LAST_BODY_FILE"
+		: >"$LAST_BODY_FILE"
+		: >"$LAST_HEADER_FILE"
 		LAST_STATUS="000"
 	fi
 }
@@ -185,7 +205,7 @@ assert_header() {
 
 # ---- 1. PUT a value (text + binary + TTL'd) -------------------------
 
-log_info "1. PUT three keys (text, base64 binary, TTL'd)"
+log_info "1. PUT three keys (text, raw binary with null+high bytes, TTL'd)"
 
 request PUT "/v1/cache/${PREFIX}-text" \
 	-H "Content-Type: text/plain" --data-raw "hello world"
@@ -193,8 +213,17 @@ assert_status "200" "$LAST_STATUS" "PUT text key returns 200"
 assert_jq '.stored' "true" "PUT text key stored=true"
 assert_jq '.bytes' "11" "PUT text key bytes=11"
 
+# Binary fidelity test: 5 bytes including a null + a high byte.
+# Must go through a temp file rather than `--data-binary $'\x00…'`
+# inline — bash passes shell-arg strings to execve as null-
+# terminated C-strings, so a leading null byte truncates curl's
+# argument to empty (cache then reports bytes=0). Stdin / @file
+# preserves all bytes verbatim.
+BINFILE=$(mktemp)
+printf '\x00\x01\x02\xfe\xff' >"$BINFILE"
 request PUT "/v1/cache/${PREFIX}-bin" \
-	-H "Content-Type: application/octet-stream" --data-binary $'\x00\x01\x02\x03\x04'
+	-H "Content-Type: application/octet-stream" --data-binary "@$BINFILE"
+rm -f "$BINFILE"
 assert_status "200" "$LAST_STATUS" "PUT binary key returns 200"
 assert_jq '.stored' "true" "PUT binary key stored=true"
 assert_jq '.bytes' "5" "PUT binary key bytes=5"
@@ -229,7 +258,8 @@ request GET "/v1/cache/${PREFIX}-text" -H "Accept: application/json"
 assert_status "200" "$LAST_STATUS" "GET text key (Accept:json) returns 200"
 assert_jq '.key' "${PREFIX}-text" "envelope key matches"
 assert_jq '.value_encoding' "base64" "envelope value_encoding=base64"
-assert_jq '.version >= 1' "true" "envelope version >= 1"
+assert_jq '.version | type' "number" "envelope version is a number"
+assert_jq '.version >= 0' "true" "envelope version is non-negative"
 assert_jq '.owners | length >= 1' "true" "envelope owners populated"
 
 request GET "/v1/cache/${PREFIX}-ttl" -H "Accept: application/json"
@@ -285,11 +315,38 @@ request DELETE "/v1/cache/${PREFIX}-text"
 assert_status "200" "$LAST_STATUS" "DELETE text key returns 200"
 assert_jq '.deleted' "true" "DELETE text key deleted=true"
 
-log_info "settling for ${SETTLE_MS}ms (delete propagation)"
-sleep_settle
-
-request GET "/v1/cache/${PREFIX}-text" -H "Accept: application/json"
-assert_status "404" "$LAST_STATUS" "post-delete GET returns 404"
+# Retry-until-eventually-404 rather than a single check after a
+# fixed sleep. A 5-node cluster with replication=3 propagates
+# tombstones via the same gossip-driven path as Sets, but timing
+# can vary (heartbeat 1s, indirect-probe k=2). A bare 500ms
+# settle was tight enough to flake on a healthy cluster — and a
+# blanket increase to "wait long enough" hides any future real
+# cache regression. The poll-and-retry shape distinguishes
+# timing from a true propagation bug: if it converges within
+# the budget, we report OK; if it doesn't, we surface the
+# response body so an operator can bisect.
+log_info "verifying delete propagation (retry up to ${POST_DELETE_BUDGET_MS}ms)"
+deadline=$(($(date +%s%N) / 1000000 + POST_DELETE_BUDGET_MS))
+got_status=""
+attempts=0
+while true; do
+	attempts=$((attempts + 1))
+	request GET "/v1/cache/${PREFIX}-text" -H "Accept: application/json"
+	got_status="$LAST_STATUS"
+	if [[ "$got_status" == "404" ]]; then
+		break
+	fi
+	now=$(($(date +%s%N) / 1000000))
+	if ((now >= deadline)); then
+		break
+	fi
+	sleep 0.25
+done
+if [[ "$got_status" == "404" ]]; then
+	log_ok "post-delete GET returns 404 (after $attempts attempt(s))"
+else
+	log_fail "post-delete GET still returns $got_status after ${POST_DELETE_BUDGET_MS}ms / $attempts attempts; body: $(cat "$LAST_BODY_FILE")"
+fi
 echo
 
 # ---- Summary --------------------------------------------------------

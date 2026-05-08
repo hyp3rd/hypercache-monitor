@@ -113,7 +113,7 @@ get() {
 		"$MGMT_URL$path") || curl_exit=$?
 	if [[ $curl_exit -ne 0 ]]; then
 		log_fail "curl failed (exit $curl_exit) on GET $path — likely timeout (>${REQ_TIMEOUT}s) or connection refused"
-		: > "$LAST_BODY_FILE"
+		: >"$LAST_BODY_FILE"
 		LAST_STATUS="000"
 	fi
 }

@@ -13,6 +13,7 @@ include .project-settings.env
 
 REPO_PREFIX ?= github.com/hyp3rd/hypercache-monitor
 NODE_VERSION ?= 25
+SMOKE_TESTS_PATH ?=./scripts/tests/smoke/
 
 NPM ?= npm
 NPX ?= npx
@@ -114,14 +115,14 @@ stop-dev-scaled: ## Tear down the local cluster.
 # against any reachable cluster via the relevant `HYPERCACHE_*`
 # env vars. Not part of `make ci` — these need an external
 # dependency the unit/E2E gates don't.
-smoke-bulk: ## Smoke-test the batch endpoints against a live cluster.
-	./scripts/smoke-bulk.sh
-
 smoke-keys: ## Smoke-test the single-key endpoints against a live cluster.
-	./scripts/smoke-keys.sh
+	$(SMOKE_TESTS_PATH)/10-smoke-keys.sh
+
+smoke-bulk: ## Smoke-test the batch endpoints against a live cluster.
+	$(SMOKE_TESTS_PATH)/20-smoke-bulk.sh
 
 smoke-mgmt: ## Smoke-test the mgmt-port endpoints against a live cluster.
-	./scripts/smoke-mgmt.sh
+	$(SMOKE_TESTS_PATH)/30-smoke-mgmt.sh
 
 smoke: smoke-mgmt smoke-keys smoke-bulk ## Run every smoke script in order.
 
