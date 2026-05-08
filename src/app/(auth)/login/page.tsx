@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
 import { BrandMark } from "@/components/brand-mark";
 import { listClusters } from "@/lib/clusters/registry";
 import { toListItem } from "@/lib/clusters/types";
+import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { LoginForm } from "./_components/login-form";
 
 export const metadata: Metadata = {
@@ -18,6 +19,16 @@ export const metadata: Metadata = {
  * a particular cluster yet (`/api/auth/switch-cluster` returns 401
  * + the picker pushes here).
  *
+ * Phase C2: when no `?cluster=` is present, the request `Host`
+ * header is matched against each cluster's `hosts: [...]` field;
+ * a hit preselects that cluster. This is multi-tenant deployment
+ * support — one binary serving N hostnames, each defaulting to a
+ * different cluster. The Host header is NEVER consulted in any
+ * auth gate; this is purely a UX default. Operators can always
+ * pick a different cluster from the dropdown.
+ *
+ * Resolution precedence: query-param > Host-match > first cluster.
+ *
  * Single-cluster deployments (env-fallback path) see exactly one
  * cluster in the list — the form renders without the dropdown,
  * preserving the Phase A / B login UX unchanged.
@@ -27,16 +38,26 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ cluster?: string | string[] }>;
 }) {
-  const clusters = listClusters().map(toListItem);
+  const clustersFull = listClusters();
+  const clusters = clustersFull.map(toListItem);
   const params = await searchParams;
   const requestedCluster = typeof params.cluster === "string" ? params.cluster : undefined;
+
+  // Strip port + lowercase to match the loader's normalized hostname
+  // form. The browser routinely sends "host.example.com:8443"; the
+  // YAML stores "host.example.com".
+  const requestHost = (await headers()).get("host")?.split(":")[0]?.toLowerCase();
+  const matchByHost = requestHost
+    ? (clustersFull.find((c) => c.hosts?.includes(requestHost))?.id ?? undefined)
+    : undefined;
+
   // If the URL preselects a cluster but it's not in the registry,
   // ignore the param rather than render a confusing pre-broken
   // form. The picker only links here for clusters that exist.
   const preselected =
     requestedCluster !== undefined && clusters.some((c) => c.id === requestedCluster)
       ? requestedCluster
-      : (clusters[0]?.id ?? undefined);
+      : (matchByHost ?? clusters[0]?.id ?? undefined);
 
   return (
     <main className="grid-backdrop bg-background relative flex min-h-screen items-center justify-center overflow-hidden p-6">

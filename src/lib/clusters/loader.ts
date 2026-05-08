@@ -1,7 +1,6 @@
-import "server-only";
-
 import { load } from "js-yaml";
 import { readFileSync } from "node:fs";
+import "server-only";
 import { z } from "zod";
 import type { Cluster } from "./types";
 
@@ -35,10 +34,27 @@ import type { Cluster } from "./types";
 
 export const DEFAULT_CLUSTER_ID = "default";
 
+// Hostname character set — bare hostname only (no scheme, no port,
+// no path). Tighter than RFC 1123 because we use the value purely
+// for case-insensitive equality against the request `Host` header
+// and any garbage character would never match anyway.
+const hostnameRegex = /^[a-z0-9.-]+$/;
+
 const clusterEntrySchema = z.object({
   name: z.string().min(1, "cluster name is required"),
   apiBaseUrl: z.string().url("apiBaseUrl must be a valid URL"),
   mgmtBaseUrl: z.string().url("mgmtBaseUrl must be a valid URL"),
+  // Phase C2: optional hostname allowlist. Used only by the /login
+  // server component to preselect the cluster matching the request's
+  // Host header. Never consulted in auth gates.
+  hosts: z
+    .array(
+      z
+        .string()
+        .min(1, "host cannot be empty")
+        .regex(hostnameRegex, "host must be a bare lowercase hostname (no scheme, no port)"),
+    )
+    .optional(),
 });
 
 const clustersFileSchema = z
@@ -54,6 +70,28 @@ const clustersFileSchema = z
   )
   .refine((map) => Object.keys(map).length > 0, {
     message: "clusters file must define at least one cluster",
+  })
+  .superRefine((map, ctx) => {
+    // Cross-cluster duplicate-host detection. Phase C2 routes the
+    // /login default by Host header; ambiguous hosts make that
+    // behavior undefined. Reject at parse time so the operator
+    // sees a loud failure rather than a confusing UX where the
+    // cluster preselected on a host depends on object key order.
+    const seen = new Map<string, string>();
+    for (const [clusterId, entry] of Object.entries(map)) {
+      for (const host of entry.hosts ?? []) {
+        const owner = seen.get(host);
+        if (owner !== undefined) {
+          ctx.addIssue({
+            code: "custom",
+            path: [clusterId, "hosts"],
+            message: `host "${host}" is already claimed by cluster "${owner}"`,
+          });
+          continue;
+        }
+        seen.set(host, clusterId);
+      }
+    }
   });
 
 export class ClusterLoaderError extends Error {
@@ -94,7 +132,7 @@ export function loadClusters(input: LoaderInput): Record<string, Cluster> {
     if (apiUrl !== undefined || mgmtUrl !== undefined) {
       warn(
         "[clusters] Both HYPERCACHE_MONITOR_CLUSTERS and HYPERCACHE_API_URL/HYPERCACHE_MGMT_URL are set; " +
-        "YAML wins, env vars are ignored. Unset the env vars to silence this warning.",
+          "YAML wins, env vars are ignored. Unset the env vars to silence this warning.",
       );
     }
     return parseYamlFile(clustersPath, readFile);
@@ -113,7 +151,7 @@ export function loadClusters(input: LoaderInput): Record<string, Cluster> {
 
   throw new ClusterLoaderError(
     "no cluster registry configured: set HYPERCACHE_MONITOR_CLUSTERS to a YAML path, " +
-    "or set both HYPERCACHE_API_URL and HYPERCACHE_MGMT_URL for the single-cluster fallback",
+      "or set both HYPERCACHE_API_URL and HYPERCACHE_MGMT_URL for the single-cluster fallback",
   );
 }
 

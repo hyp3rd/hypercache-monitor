@@ -113,10 +113,30 @@ cluster's `HYPERCACHE_AUTH_CONFIG`); switching to a cluster the
 session has not bound credentials for redirects to
 `/login?cluster=<id>`.
 
-The YAML file is read once at boot — restart the monitor process
-to pick up changes. Single-cluster deployments need no YAML and
-keep working with the legacy `HYPERCACHE_API_URL` /
-`HYPERCACHE_MGMT_URL` pair.
+**Hostname-aware default (Phase C2).** Each entry may include an
+optional `hosts: [...]` allowlist of bare hostnames (lowercase, no
+scheme, no port). When the monitor serves multiple hostnames from a
+single binary, the matching `Host` header on `/login` preselects
+that cluster in the picker. Two clusters cannot claim the same
+host (loader rejects at boot). The Host header is never consulted
+in any auth gate — purely a UX default; operators always pick
+freely from the dropdown.
+
+**Live reload (Phase C2).** The YAML file is `fs.watchFile`-polled
+on a 2-second interval. Edits propagate to the running monitor
+without a restart. Bad parses (typo, duplicate host, removed file)
+log to stderr and keep the previous valid registry — operators
+iterate without bringing the monitor down. Single-cluster
+deployments need no YAML and keep working with the legacy
+`HYPERCACHE_API_URL` / `HYPERCACHE_MGMT_URL` pair.
+
+**Per-cluster identity (Phase C2).** The login flow probes
+`GET /v1/me` on the selected cluster. The cache returns the
+operator's resolved identity (token ID or mTLS subject CN) and
+the actual scopes the bound credential carries — no more optimistic
+three-scope grants. Pre-Phase-C2 cache binaries return 404 on
+`/v1/me`; the monitor surfaces a clear "cache server too old"
+error instead of a generic upstream failure.
 
 ## Quality gates
 

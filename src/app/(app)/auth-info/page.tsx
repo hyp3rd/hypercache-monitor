@@ -1,10 +1,10 @@
+import { fetchSpec, SpecFetchError, type CacheSpec } from "@/lib/api/spec";
+import { activeSession } from "@/lib/auth/session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { activeSession } from "@/lib/auth/session";
-import { fetchSpec, SpecFetchError, type CacheSpec } from "@/lib/api/spec";
 import { IdentityCard } from "./_components/identity-card";
-import { ScopesCard } from "./_components/scopes-card";
 import { SchemeCard } from "./_components/scheme-card";
+import { ScopesCard } from "./_components/scopes-card";
 
 export const metadata: Metadata = {
   title: "Auth posture",

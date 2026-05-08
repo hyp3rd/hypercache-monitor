@@ -30,10 +30,17 @@ default:
 
 prod-eu:
   name: "Production EU"
+  # Phase C2: optional hostname allowlist. When the monitor is
+  # deployed multi-tenant (one binary serving multiple hostnames),
+  # the matching Host header on /login preselects this cluster in
+  # the picker. Lowercase, hostname-only — no scheme, no port.
+  # Two clusters cannot claim the same host (loader rejects at boot).
+  hosts: ["monitor-eu.example.com", "monitor-eu.internal"]
   apiBaseUrl: "https://cache-eu.example.com"
   mgmtBaseUrl: "https://cache-eu.example.com:8081"
 
 prod-us:
   name: "Production US"
+  hosts: ["monitor-us.example.com"]
   apiBaseUrl: "https://cache-us.example.com"
   mgmtBaseUrl: "https://cache-us.example.com:8081"

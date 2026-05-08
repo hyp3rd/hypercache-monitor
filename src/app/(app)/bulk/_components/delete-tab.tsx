@@ -1,9 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Trash2, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { DataTable } from "@/components/data-table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,12 +12,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import type { ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
 import { batchDelete, type BatchDeleteResult } from "@/lib/api/bulk";
 import { runChunked, type ChunkProgress } from "@/lib/bulk/chunk";
-import { DataTable } from "@/components/data-table";
-import { KeysInput } from "./keys-input";
+import { useState } from "react";
+import { Trash2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import type { ColumnDef } from "@tanstack/react-table";
 import { BulkProgress } from "./bulk-progress";
+import { KeysInput } from "./keys-input";
 
 /**
  * Bulk delete with two-step confirmation:

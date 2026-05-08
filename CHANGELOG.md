@@ -7,6 +7,97 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 The version label visible in the app's sidebar footer is the
 authoritative current version.
 
+## [0.7.1] — Phase C2: Real identity, hostname defaults, live reload
+
+Closes the four items deferred from C1. Single-cluster deployments
+remain back-compatible. Multi-cluster deployments gain real per-
+cluster identity, hostname-aware login defaults, and YAML edits
+that propagate without restart.
+
+### Added
+
+- **`GET /v1/me` login probe.** `src/app/api/auth/login/route.ts`
+  now probes the cache's new `/v1/me` endpoint instead of the
+  legacy two-step `/v1/openapi.yaml` + `/v1/owners/__probe__`
+  flow. The cache returns the operator's resolved identity and
+  the actual scopes the bound credential carries; the session
+  cookie is sealed with those real values. The Phase A/B
+  optimistic `["read","write","admin"]` grant is gone — the
+  proxy's scope check (`src/lib/api/proxy.ts:72`) becomes
+  correct rather than accidentally permissive. Pre-Phase-C2
+  cache binaries that don't expose `/v1/me` 404 the probe;
+  the route surfaces a clear "cache server too old" error
+  instead of generic `UPSTREAM_FAILURE`. New zod schema uses
+  `.passthrough()` for forward-compat with future cache fields.
+  15 unit tests in `route.test.ts` (happy path, malformed body,
+  401/403/404/5xx, illegal clusterId, cross-cluster sealing).
+- **Hostname-aware default cluster on `/login`.** Each cluster
+  in `clusters.yaml` may include an optional `hosts: [...]`
+  allowlist. The `/login` server component now reads the request
+  `Host` header (port-stripped, lowercased) and preselects the
+  matching cluster in the dropdown. Resolution precedence:
+  `?cluster=` query param > Host-header match > first cluster.
+  Loader rejects ambiguous configurations (two clusters claiming
+  the same host) at boot. Hostnames must be bare lowercase
+  strings — no scheme, no port. The Host header is **never**
+  consulted in any auth gate; this is purely a UX default.
+- **Live `clusters.yaml` reload.** The registry is now stateful;
+  `fs.watchFile` polls the YAML at 2-second intervals, atomically
+  swaps the registry on a successful re-parse, and **keeps the
+  previous valid map** when the reload fails (bad YAML, removed
+  file, schema violation). Operators can edit `clusters.yaml`
+  in place — adding clusters, removing clusters, fixing typos —
+  without restarting the monitor. 7 new unit tests in
+  `registry.test.ts` exercise the reload path through a
+  `__test_reloadFromPath` seam (no real fs.watch in tests).
+- **Multi-cluster E2E scenario** (`tests/e2e/multi-cluster.spec.ts`).
+  Spins up TWO cache stub instances on disjoint port pairs
+  (`STUB_API_PORT_B=3403`, `STUB_MGMT_PORT_B=3404`), writes a
+  temp `clusters.yaml` at config-load time mapping cluster ids
+  `default`/`secondary` to the two stubs, and drives the full
+  cross-cluster flow: login on default → click secondary in
+  picker → 401 NEED_LOGIN → redirect to `/login?cluster=secondary`
+  → login → topbar identity flips to `stub-B` → switch back to
+  default in picker → topbar flips to `stub-A` → logout. Each
+  stub's `/v1/me` returns a distinguishable identity so the
+  topbar flip is observable in the DOM.
+
+### Changed
+
+- `src/lib/clusters/types.ts` — `Cluster` interface gains
+  optional `hosts?: readonly string[]`.
+- `src/lib/clusters/loader.ts` — zod schema extended with
+  hostname validation; `superRefine` enforces cross-cluster
+  hostname uniqueness.
+- `src/lib/clusters/registry.ts` — refactored from a frozen
+  `const registry` to a mutable `let current` with `fs.watchFile`-
+  driven reloads. Public API (`getCluster`, `listClusters`,
+  `DEFAULT_CLUSTER_ID`) is unchanged. Build-phase guard preserved.
+  Hot-reload safety in dev via `globalThis.__hypercacheClustersWatcher`.
+- `tests/e2e/fixtures/cache-stub.ts` — `startCacheStub` now
+  takes optional `{ apiPort, mgmtPort, identity }` so the same
+  stub code can spawn N instances. Existing single-cluster
+  scenarios continue to work because the default args match the
+  previous fixed values exactly.
+- `playwright.config.ts` — webServer env switched from
+  `HYPERCACHE_API_URL`/`HYPERCACHE_MGMT_URL` pair to
+  `HYPERCACHE_MONITOR_CLUSTERS` pointing at the temp YAML.
+  Existing 14 single-cluster specs continue to work because
+  the YAML's first cluster id is still `default`.
+
+### Notes
+
+- The cache repo's matching `GET /v1/me` work landed in its own
+  CHANGELOG entry; the monitor's C2 changes assume operators
+  upgrade the cache binary alongside the monitor. Mismatched
+  versions surface clearly via the `404 → "cache server too old"`
+  error path.
+- Per-cluster logout still out of scope — `/api/auth/logout`
+  destroys the whole session.
+- Iron-session 4 KB cookie ceiling unchanged; sealing real
+  scopes (often 1-2 entries) makes the cookie _smaller_ on
+  average than the legacy three-element grant.
+
 ## [0.7.0] — Phase C1: Multi-cluster registry
 
 First Phase C deliverable. The session shape, proxy URL layout, and

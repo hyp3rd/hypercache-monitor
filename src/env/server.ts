@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 /**
  * Server-only environment validation. Imported by API routes,
  * server components, and the iron-session config. Never imported
@@ -10,6 +8,7 @@ import { z } from "zod";
  * scattered through the code is a forbidden pattern.
  */
 import "server-only";
+import { z } from "zod";
 
 const schema = z.object({
   // Cluster registry source. EITHER set HYPERCACHE_MONITOR_CLUSTERS

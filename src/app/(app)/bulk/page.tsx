@@ -1,6 +1,6 @@
+import { activeSession } from "@/lib/auth/session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { activeSession } from "@/lib/auth/session";
 import { BulkClient } from "./_components/bulk-client";
 
 export const metadata: Metadata = {

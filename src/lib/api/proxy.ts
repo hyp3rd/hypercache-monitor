@@ -1,11 +1,10 @@
-import "server-only";
-
 import type { Scope } from "@/lib/auth/session";
 import { activeSession } from "@/lib/auth/session";
 import { getCluster } from "@/lib/clusters/registry";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
+import "server-only";
 
 /**
  * Server-side proxy from the browser to a HyperCache cluster.

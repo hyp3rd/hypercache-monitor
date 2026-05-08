@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { ThemeToggle } from "./theme-toggle";
 
 /**

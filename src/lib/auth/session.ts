@@ -1,9 +1,8 @@
-import "server-only";
-
 import { serverEnv } from "@/env/server";
 import type { SessionOptions } from "iron-session";
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
+import "server-only";
 
 /**
  * iron-session sealed cookie carrying the operator's resolved

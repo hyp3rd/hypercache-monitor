@@ -9,9 +9,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState, useTransition } from "react";
 import { ChevronsUpDown, Loader2, Server, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
 
 /**
  * Cluster picker. Renders the active cluster + identity badge

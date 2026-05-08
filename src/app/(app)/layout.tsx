@@ -5,10 +5,10 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
 import { activeSession } from "@/lib/auth/session";
 import { listClusters } from "@/lib/clusters/registry";
+import type { ReactNode } from "react";
 import { BarChart3, Database, FileCode2, Layers, Network, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import type { ReactNode } from "react";
 
 /**
  * Sidebar + topbar shell that wraps every authenticated route.
@@ -59,8 +59,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.7.0 · Phase C1 — Multi-cluster</p>
-          <p className="mt-1">Cluster registry via YAML, per-cluster login, interactive picker.</p>
+          <p className="font-mono">v0.7.1 · Phase C2 — Multi-cluster</p>
+          <p className="mt-1">/v1/me identity, hostname defaults, live YAML reload, cross-cluster E2E.</p>
         </div>
       </aside>
 

@@ -1,7 +1,7 @@
+import { fetchSpecRaw, filterToSafeMethods } from "@/lib/api/spec-raw";
+import { activeSession } from "@/lib/auth/session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { activeSession } from "@/lib/auth/session";
-import { fetchSpecRaw, filterToSafeMethods } from "@/lib/api/spec-raw";
 import { SpecViewer } from "./_components/spec-viewer";
 
 export const metadata: Metadata = {

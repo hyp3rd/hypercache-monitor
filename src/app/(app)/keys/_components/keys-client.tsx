@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchKey, type CacheApiError } from "@/lib/api/keys";
 import { queryKeys } from "@/lib/query/keys";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { Database, KeyRound } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { KeyDetail } from "./key-detail";
 import { KeySearch } from "./key-search";
 

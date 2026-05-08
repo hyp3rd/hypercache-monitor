@@ -170,3 +170,108 @@ prod-eu:
     expect(Object.isFrozen(out)).toBe(true);
   });
 });
+
+describe("loadClusters — Phase C2 hostname allowlist", () => {
+  const yamlWithHosts = `
+default:
+  name: "Local cluster"
+  apiBaseUrl: "http://cache:8080"
+  mgmtBaseUrl: "http://cache:8081"
+prod-eu:
+  name: "Production EU"
+  hosts: ["monitor-eu.example.com", "monitor-eu.internal"]
+  apiBaseUrl: "https://cache-eu.example.com:8080"
+  mgmtBaseUrl: "https://cache-eu.example.com:8081"
+`;
+
+  it("parses hosts as part of the cluster entry", () => {
+    const out = loadClusters({
+      clustersPath: "/etc/monitor/clusters.yaml",
+      apiUrl: undefined,
+      mgmtUrl: undefined,
+      readFile: () => yamlWithHosts,
+    });
+    expect(out["prod-eu"]?.hosts).toEqual(["monitor-eu.example.com", "monitor-eu.internal"]);
+    // Cluster without `hosts` keeps the field undefined (not [])
+    // so login-page logic can distinguish "no allowlist" from
+    // "explicitly empty allowlist" (which would never match).
+    expect(out["default"]?.hosts).toBeUndefined();
+  });
+
+  it("rejects YAML where two clusters claim the same host", () => {
+    const dupYaml = `
+prod-eu:
+  name: "Prod EU"
+  hosts: ["monitor.example.com"]
+  apiBaseUrl: "https://eu.example.com"
+  mgmtBaseUrl: "https://eu.example.com:8081"
+prod-us:
+  name: "Prod US"
+  hosts: ["monitor.example.com"]
+  apiBaseUrl: "https://us.example.com"
+  mgmtBaseUrl: "https://us.example.com:8081"
+`;
+    expect(() =>
+      loadClusters({
+        clustersPath: "/etc/monitor/clusters.yaml",
+        apiUrl: undefined,
+        mgmtUrl: undefined,
+        readFile: () => dupYaml,
+      }),
+    ).toThrow(/already claimed/);
+  });
+
+  it("rejects a host with uppercase letters (case-insensitive matching is the contract; the YAML is the source of truth and must be normalized)", () => {
+    const upperYaml = `
+prod-eu:
+  name: "Prod EU"
+  hosts: ["Monitor-EU.example.com"]
+  apiBaseUrl: "https://eu.example.com"
+  mgmtBaseUrl: "https://eu.example.com:8081"
+`;
+    expect(() =>
+      loadClusters({
+        clustersPath: "/etc/monitor/clusters.yaml",
+        apiUrl: undefined,
+        mgmtUrl: undefined,
+        readFile: () => upperYaml,
+      }),
+    ).toThrow(/bare lowercase hostname/);
+  });
+
+  it("rejects a host with a port suffix", () => {
+    const portYaml = `
+prod-eu:
+  name: "Prod EU"
+  hosts: ["monitor-eu.example.com:8443"]
+  apiBaseUrl: "https://eu.example.com"
+  mgmtBaseUrl: "https://eu.example.com:8081"
+`;
+    expect(() =>
+      loadClusters({
+        clustersPath: "/etc/monitor/clusters.yaml",
+        apiUrl: undefined,
+        mgmtUrl: undefined,
+        readFile: () => portYaml,
+      }),
+    ).toThrow(/no scheme, no port/);
+  });
+
+  it("rejects a host with a scheme prefix", () => {
+    const schemeYaml = `
+prod-eu:
+  name: "Prod EU"
+  hosts: ["https://monitor-eu.example.com"]
+  apiBaseUrl: "https://eu.example.com"
+  mgmtBaseUrl: "https://eu.example.com:8081"
+`;
+    expect(() =>
+      loadClusters({
+        clustersPath: "/etc/monitor/clusters.yaml",
+        apiUrl: undefined,
+        mgmtUrl: undefined,
+        readFile: () => schemeYaml,
+      }),
+    ).toThrow(/no scheme, no port/);
+  });
+});

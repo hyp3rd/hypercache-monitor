@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 import { Download, Upload, Trash2 } from "lucide-react";
+import { DeleteTab } from "./delete-tab";
 import { FetchTab } from "./fetch-tab";
 import { PutTab } from "./put-tab";
-import { DeleteTab } from "./delete-tab";
 
 /**
  * Tabs orchestrator for the /bulk page. Three workflows live

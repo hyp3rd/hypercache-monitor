@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { STUB_API_URL, STUB_MGMT_URL } from "./tests/e2e/fixtures/cache-stub";
+import { CLUSTERS_YAML_PATH } from "./tests/e2e/fixtures/clusters-yaml";
 
 // Playwright runs the full app against `next dev` (or a built
 // production server in CI). The webServer block boots Next; the
@@ -9,9 +9,17 @@ import { STUB_API_URL, STUB_MGMT_URL } from "./tests/e2e/fixtures/cache-stub";
 //
 // Architecture note: webServer is a child process that inherits
 // env at spawn time and CANNOT see process.env mutations from
-// globalSetup. So we pass HYPERCACHE_API_URL / HYPERCACHE_MGMT_URL
-// here explicitly, pinned to the same fixed ports the stub binds
-// to (see tests/e2e/fixtures/cache-stub.ts).
+// globalSetup. So we pass HYPERCACHE_MONITOR_CLUSTERS here
+// explicitly. globalSetup writes the YAML at CLUSTERS_YAML_PATH
+// BEFORE webServer spawns (Playwright runs globalSetup first per
+// its docs), so the registry's first read finds a valid file.
+//
+// Phase C2: switched from the single-cluster URL pair
+// (HYPERCACHE_API_URL / HYPERCACHE_MGMT_URL) to the YAML registry.
+// The YAML defines two clusters pointing at two stub instances —
+// see tests/e2e/global-setup.ts. Existing single-cluster specs
+// continue to work because the first cluster id is still "default"
+// and the login form auto-selects the first entry.
 
 // 32-char minimum per src/env/server.ts. Test-only secret —
 // regenerated each run is unnecessary because the cookie never
@@ -70,8 +78,7 @@ export default defineConfig({
     reuseExistingServer: !process.env["CI"],
     timeout: 120_000,
     env: {
-      HYPERCACHE_API_URL: STUB_API_URL,
-      HYPERCACHE_MGMT_URL: STUB_MGMT_URL,
+      HYPERCACHE_MONITOR_CLUSTERS: CLUSTERS_YAML_PATH,
       IRON_SESSION_SECRET: TEST_SESSION_SECRET,
       NODE_ENV: "test",
     },

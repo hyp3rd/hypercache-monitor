@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldCheck, AlertTriangle } from "lucide-react";
-import type { Scope } from "@/lib/auth/session";
 import { scopeCatalog } from "@/lib/auth/scopes";
+import type { Scope } from "@/lib/auth/session";
+import { ShieldCheck, AlertTriangle } from "lucide-react";
 
 /**
  * Granted-scopes card. Two views:

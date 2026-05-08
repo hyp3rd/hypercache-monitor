@@ -1,7 +1,6 @@
-import "server-only";
-
-import { load } from "js-yaml";
 import { getCluster } from "@/lib/clusters/registry";
+import { load } from "js-yaml";
+import "server-only";
 import { SpecFetchError } from "./spec";
 
 /**
