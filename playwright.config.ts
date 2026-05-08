@@ -37,7 +37,15 @@ export default defineConfig({
   reporter: process.env["CI"] ? "github" : "list",
 
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    // Dedicated test port — keeps the E2E web server isolated
+    // from `npm run dev` on :3000, which an operator might be
+    // running concurrently for visual review. With Playwright's
+    // historic `reuseExistingServer: !CI` setting, hitting :3000
+    // would have reused the operator's dev server (wrong env
+    // vars, no cache stub) and produced 13/14 silent E2E failures.
+    // Decoupling on :3100 makes that class of bug structurally
+    // impossible.
+    baseURL: "http://127.0.0.1:3100",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -51,9 +59,14 @@ export default defineConfig({
 
   webServer: {
     command: process.env["CI"]
-      ? "npm run build && npm run start -- --port 3000 --hostname 127.0.0.1"
-      : "npm run dev -- --port 3000 --hostname 127.0.0.1",
-    url: "http://127.0.0.1:3000",
+      ? "npm run build && npm run start -- --port 3100 --hostname 127.0.0.1"
+      : "npm run dev -- --port 3100 --hostname 127.0.0.1",
+    url: "http://127.0.0.1:3100",
+    // Reuse-existing on :3100 is safe — only Playwright itself
+    // ever binds that port, so a "reuse" only ever picks up
+    // ITS OWN previous instance during fast iteration. No
+    // operator dev server can land on :3100 unless they
+    // explicitly target it.
     reuseExistingServer: !process.env["CI"],
     timeout: 120_000,
     env: {

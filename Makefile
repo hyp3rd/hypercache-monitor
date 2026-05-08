@@ -108,6 +108,24 @@ stop-dev-scaled: ## Tear down the local cluster.
 	@if [ ! -f ../hypercache/docker-compose.cluster.yml ]; then exit 0; fi
 	cd ../hypercache && docker compose -f docker-compose.cluster.yml down
 
+# ---- Smoke tests (live cluster) -------------------------------------
+# Wire-contract checks that hit a real cache server, bypassing
+# the Next.js proxy. Run after `make start-dev-scaled` or
+# against any reachable cluster via the relevant `HYPERCACHE_*`
+# env vars. Not part of `make ci` — these need an external
+# dependency the unit/E2E gates don't.
+smoke-bulk: ## Smoke-test the batch endpoints against a live cluster.
+	./scripts/smoke-bulk.sh
+
+smoke-keys: ## Smoke-test the single-key endpoints against a live cluster.
+	./scripts/smoke-keys.sh
+
+smoke-mgmt: ## Smoke-test the mgmt-port endpoints against a live cluster.
+	./scripts/smoke-mgmt.sh
+
+smoke: smoke-mgmt smoke-keys smoke-bulk ## Run every smoke script in order.
+
 .PHONY: help dev build start fmt fmt-check lint lint-fix typecheck \
 	test test-watch e2e sec codegen codegen-check ci \
-	start-dev-scaled stop-dev-scaled
+	start-dev-scaled stop-dev-scaled \
+	smoke smoke-bulk smoke-keys smoke-mgmt

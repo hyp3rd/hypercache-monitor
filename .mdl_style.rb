@@ -26,4 +26,4 @@ rule "MD029", style => "one"
 # allow_different_nesting permits same-text headings as long as they sit
 # under distinct parent headings — which is exactly the Keep-a-Changelog
 # shape, and still catches genuine duplicates within the same section.
-rule "MD024", :siblings_only => true
+rule "MD024", :siblings_only => true, :allow_different_nesting => true
