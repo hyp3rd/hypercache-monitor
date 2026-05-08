@@ -1,8 +1,7 @@
-import "server-only";
-
-import { load } from "js-yaml";
-import { z } from "zod";
 import { getCluster } from "@/lib/clusters/registry";
+import { load } from "js-yaml";
+import "server-only";
+import { z } from "zod";
 
 /**
  * Server-side fetcher + zod-validated projection of the cache's

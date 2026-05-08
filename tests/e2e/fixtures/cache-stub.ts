@@ -31,26 +31,64 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
  */
 
 export const STUB_VALID_TOKEN = "valid-stub-token";
+
+// Phase C2: two stub instances live in parallel during the E2E
+// suite — the first matches the existing single-cluster scenarios
+// (kept on the original 3401/3402 ports for back-compat with
+// every existing spec), the second backs the new multi-cluster
+// scenario at 3403/3404.
 export const STUB_API_PORT = 3401;
 export const STUB_MGMT_PORT = 3402;
+export const STUB_API_PORT_B = 3403;
+export const STUB_MGMT_PORT_B = 3404;
 export const STUB_API_URL = `http://127.0.0.1:${STUB_API_PORT}`;
 export const STUB_MGMT_URL = `http://127.0.0.1:${STUB_MGMT_PORT}`;
+export const STUB_API_URL_B = `http://127.0.0.1:${STUB_API_PORT_B}`;
+export const STUB_MGMT_URL_B = `http://127.0.0.1:${STUB_MGMT_PORT_B}`;
+
+// Per-cluster identity labels. The multi-cluster spec asserts the
+// rendered topbar identity flips between clusters, which is only
+// observable if each stub returns a distinguishable /v1/me payload.
+export const STUB_IDENTITY_A = "stub-A";
+export const STUB_IDENTITY_B = "stub-B";
 
 export interface StubHandle {
   apiUrl: string;
   mgmtUrl: string;
+  identity: string;
   close: () => Promise<void>;
 }
 
-export async function startCacheStub(): Promise<StubHandle> {
-  const apiServer = createServer(handle);
-  const mgmtServer = createServer(handle);
+interface StubOptions {
+  apiPort: number;
+  mgmtPort: number;
+  apiUrl: string;
+  mgmtUrl: string;
+  identity: string;
+}
 
-  await Promise.all([listen(apiServer, STUB_API_PORT), listen(mgmtServer, STUB_MGMT_PORT)]);
+export async function startCacheStub(opts?: Partial<StubOptions>): Promise<StubHandle> {
+  const resolved: StubOptions = {
+    apiPort: opts?.apiPort ?? STUB_API_PORT,
+    mgmtPort: opts?.mgmtPort ?? STUB_MGMT_PORT,
+    apiUrl: opts?.apiUrl ?? STUB_API_URL,
+    mgmtUrl: opts?.mgmtUrl ?? STUB_MGMT_URL,
+    identity: opts?.identity ?? STUB_IDENTITY_A,
+  };
+
+  // Each instance gets its own handler closure so /v1/me returns
+  // a stable, instance-specific identity. The handler factory
+  // captures the identity; everything else is shared.
+  const handler = makeHandle(resolved.identity);
+  const apiServer = createServer(handler);
+  const mgmtServer = createServer(handler);
+
+  await Promise.all([listen(apiServer, resolved.apiPort), listen(mgmtServer, resolved.mgmtPort)]);
 
   return {
-    apiUrl: STUB_API_URL,
-    mgmtUrl: STUB_MGMT_URL,
+    apiUrl: resolved.apiUrl,
+    mgmtUrl: resolved.mgmtUrl,
+    identity: resolved.identity,
     close: async () => {
       await Promise.all([closeServer(apiServer), closeServer(mgmtServer)]);
     },
@@ -69,7 +107,13 @@ const keyStore = new Map<string, { bytes: Buffer; ttlMs?: number }>();
 // any timing tricks in the E2E itself.
 let distMetricsCalls = 0;
 
-function handle(req: IncomingMessage, res: ServerResponse): void {
+function makeHandle(identity: string): (req: IncomingMessage, res: ServerResponse) => void {
+  return (req, res) => {
+    handle(req, res, identity);
+  };
+}
+
+function handle(req: IncomingMessage, res: ServerResponse, identity: string): void {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const auth = req.headers["authorization"];
   const requireAuth = url.pathname !== "/v1/openapi.yaml";
@@ -118,6 +162,17 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
     const key = decodeURIComponent(ownersMatch[1] ?? "");
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ key, owners: ["node-1", "node-2", "node-3"], node: "node-1" }));
+    return;
+  }
+
+  // Phase C2: GET /v1/me — login probe. Returns the resolved
+  // identity for the bearer the request carried. Token validity
+  // was already checked above (the Bearer-token gate at the top
+  // of `handle`), so reaching this branch means the operator
+  // presented a valid token and the cache renders its identity.
+  if (url.pathname === "/v1/me" && req.method === "GET") {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ id: identity, scopes: ["read", "write", "admin"] }));
     return;
   }
 

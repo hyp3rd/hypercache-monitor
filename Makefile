@@ -44,7 +44,8 @@ start: ## Run the production server (requires a prior `make build`).
 
 # ---- Quality gates ---------------------------------------------------
 fmt: ## Auto-format with Prettier.
-	$(NPX) prettier --write .
+	$(NPM) run format
+# 	$(NPX) prettier --write .
 
 fmt-check: ## Verify Prettier formatting (CI-friendly; non-zero on diff).
 	$(NPX) prettier --ignore-unknown --check .

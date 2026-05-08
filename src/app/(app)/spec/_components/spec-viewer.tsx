@@ -20,7 +20,6 @@
  * sections use native `<details>` so we don't pay for
  * "use client" + state management.
  */
-
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";

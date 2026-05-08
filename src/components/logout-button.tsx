@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useTransition } from "react";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
 
 export function LogoutButton() {
   const router = useRouter();

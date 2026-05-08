@@ -4,21 +4,42 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { ClusterListItem } from "@/lib/clusters/types";
+import { useState, useTransition } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
 
 /**
  * Bearer-token login form. The token is POSTed to
  * `/api/auth/login`, which validates against the upstream cache,
  * seals an iron-session cookie, and redirects to `/topology`.
  * The token NEVER lives in client state past the single fetch.
+ *
+ * Phase C1: when the registry has >1 cluster the form prepends a
+ * cluster `<Select>` and sends `{ token, clusterId }`. With a
+ * single cluster the dropdown is omitted entirely (rendering and
+ * accessibility tree match the Phase A/B form exactly), and the
+ * single cluster id rides along in the body — login route already
+ * defaults to it but sending it explicitly keeps the wire format
+ * uniform across single- and multi-cluster deployments.
  */
-export function LoginForm() {
+export function LoginForm({
+  clusters,
+  preselectedClusterId,
+}: {
+  clusters: ClusterListItem[];
+  preselectedClusterId: string | undefined;
+}) {
   const router = useRouter();
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [selectedClusterId, setSelectedClusterId] = useState<string | undefined>(
+    preselectedClusterId ?? clusters[0]?.id,
+  );
+
+  const showClusterPicker = clusters.length > 1;
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +49,9 @@ export function LoginForm() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify(
+          selectedClusterId !== undefined ? { token, clusterId: selectedClusterId } : { token },
+        ),
       });
 
       // Wipe the token from local state regardless of outcome.
@@ -55,6 +78,33 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <form id="login-form" onSubmit={onSubmit} className="space-y-4">
+          {showClusterPicker && (
+            <div className="space-y-2">
+              <Label
+                htmlFor="cluster"
+                className="text-muted-foreground text-xs font-medium tracking-wider uppercase"
+              >
+                Cluster
+              </Label>
+              <Select
+                value={selectedClusterId}
+                onValueChange={(v) => setSelectedClusterId(v)}
+                disabled={pending}
+              >
+                <SelectTrigger id="cluster" className="w-full" aria-label="Cluster">
+                  <SelectValue placeholder="Select a cluster" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clusters.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <span className="font-medium">{c.name}</span>
+                      <span className="text-muted-foreground ml-2 font-mono text-xs">{c.id}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label
               htmlFor="token"

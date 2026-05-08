@@ -7,7 +7,6 @@
 // The control-panel target is Lighthouse a11y >= 95 (Phase A
 // verification). The recommended jsx-a11y rules ship by
 // default with core-web-vitals; this config inherits them.
-
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 

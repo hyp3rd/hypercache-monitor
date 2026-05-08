@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
-import { Download, Play, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
-import type { ColumnDef } from "@tanstack/react-table";
 import { type BatchGetResult, batchGet } from "@/lib/api/bulk";
 import { runChunked, type ChunkProgress } from "@/lib/bulk/chunk";
 import { serializeCsv } from "@/lib/csv/csv";
 import { decodeBase64, decodeUtf8 } from "@/lib/value-decode";
-import { DataTable } from "@/components/data-table";
-import { KeysInput } from "./keys-input";
+import { useState } from "react";
+import { Download, Play, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import type { ColumnDef } from "@tanstack/react-table";
 import { BulkProgress } from "./bulk-progress";
+import { KeysInput } from "./keys-input";
 
 /**
  * Bulk fetch — paste/upload keys, POST chunked /batch/get,

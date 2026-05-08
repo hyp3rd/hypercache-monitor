@@ -9,6 +9,15 @@ export interface Cluster {
   name: string;
   apiBaseUrl: string;
   mgmtBaseUrl: string;
+  /**
+   * Phase C2: optional hostname allowlist. When the monitor is
+   * deployed multi-tenant (one binary serving N hostnames), a
+   * matching `Host` header on `/login` preselects this cluster
+   * in the picker. Lowercase, hostname-only (no scheme, no port).
+   * Not used in any auth gate — purely a UX default; the operator
+   * can always pick a different cluster from the dropdown.
+   */
+  hosts?: readonly string[];
 }
 
 /**

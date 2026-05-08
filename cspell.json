@@ -9,7 +9,18 @@
     }
   ],
   "dictionaries": ["custom-dictionary"],
-  "words": ["autobuild", "buildx", "EDITMSG", "Healthz", "mkdocs", "nolint", "subshell", "Vercel"],
+  "words": [
+    "autobuild",
+    "buildx",
+    "EDITMSG",
+    "Healthz",
+    "hostnames",
+    "mkdocs",
+    "nolint",
+    "subshell",
+    "trivago",
+    "Vercel"
+  ],
   "ignoreWords": [],
   "import": []
 }

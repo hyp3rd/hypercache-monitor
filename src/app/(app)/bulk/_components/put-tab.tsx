@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
+import { batchPut, type BatchPutItem, type BatchPutResult } from "@/lib/api/bulk";
+import { runChunked, type ChunkProgress } from "@/lib/bulk/chunk";
+import { useState } from "react";
 import { Play, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
-import { batchPut, type BatchPutItem, type BatchPutResult } from "@/lib/api/bulk";
-import { runChunked, type ChunkProgress } from "@/lib/bulk/chunk";
-import { DataTable } from "@/components/data-table";
-import { CsvInput } from "./csv-input";
 import { BulkProgress } from "./bulk-progress";
+import { CsvInput } from "./csv-input";
 
 /**
  * Bulk put — operator uploads CSV (key,value,ttl_ms?,value_encoding?),

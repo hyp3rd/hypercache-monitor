@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import type { ItemEnvelope } from "@/lib/api/keys";
 import { decodeBase64, decodeUtf8 } from "@/lib/value-decode";
-import { Pencil, X } from "lucide-react";
 import { useState } from "react";
+import { Pencil, X } from "lucide-react";
 import { DeleteKeyButton } from "./delete-key-button";
 import { KeyForm } from "./key-form";
 import { OwnersStrip } from "./owners-strip";

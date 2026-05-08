@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { bytesToBlob, decodeBase64, decodeUtf8, toHexDump } from "@/lib/value-decode";
-import { Download } from "lucide-react";
 import { useMemo } from "react";
+import { Download } from "lucide-react";
 
 /**
  * Renders the `value` field of an ItemEnvelope across four

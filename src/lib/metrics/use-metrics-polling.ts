@@ -3,8 +3,8 @@
 import { fetchConfig, fetchDistMetrics, fetchStats, type DistMetrics } from "@/lib/api/metrics";
 import { queryKeys } from "@/lib/query/keys";
 import { usePollInterval } from "@/lib/query/poll";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { RingBuffer, type DeltaPoint } from "./ring-buffer";
 
 /**

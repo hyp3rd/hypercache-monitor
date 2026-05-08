@@ -1,7 +1,7 @@
 "use client";
 
-import { ThemeProvider as NextThemesProvider } from "next-themes";
 import type { ComponentProps, ReactNode } from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 
 /**
  * Wrapper around `next-themes` so the rest of the app doesn't

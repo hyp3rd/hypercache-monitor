@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { KeyRound, AlertTriangle } from "lucide-react";
 import type { SecurityScheme } from "@/lib/api/spec";
+import { KeyRound, AlertTriangle } from "lucide-react";
 
 /**
  * Server-side security-scheme card. Renders what the cache's

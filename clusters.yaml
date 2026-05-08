@@ -1,0 +1,39 @@
+---
+# HyperCache Monitor — multi-cluster registry example
+#
+# Set HYPERCACHE_MONITOR_CLUSTERS to the absolute path of a copy
+# of this file to register multiple HyperCache clusters with the
+# monitor. The map key is the cluster id; it must match
+# [a-zA-Z0-9_-]+ (it appears in proxy URLs and queryKeys).
+#
+# Each entry:
+#   name        — human label shown in the picker / login form
+#   apiBaseUrl  — client API (DELETE/PUT/GET/HEAD) base URL
+#   mgmtBaseUrl — management HTTP base URL (cluster members,
+#                 stats, control ops)
+#
+# Operators bind a token per cluster from the login screen; the
+# session cookie carries one entry per cluster they have logged
+# into and the picker flips the active one.
+#
+# Single-cluster deployments do NOT need this file — set
+# HYPERCACHE_API_URL + HYPERCACHE_MGMT_URL instead and the loader
+# synthesises a `default` entry.
+#
+# The file is read once at boot. Restart the monitor process to
+# pick up changes.
+
+default:
+  name: "Local cluster"
+  apiBaseUrl: "http://localhost:8081"
+  mgmtBaseUrl: "http://localhost:9085"
+
+prod-eu:
+  name: "Production EU"
+  apiBaseUrl: "https://cache-eu.example.com"
+  mgmtBaseUrl: "https://cache-eu.example.com:8081"
+
+prod-us:
+  name: "Production US"
+  apiBaseUrl: "https://cache-us.example.com"
+  mgmtBaseUrl: "https://cache-us.example.com:8081"

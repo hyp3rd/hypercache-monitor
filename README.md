@@ -72,14 +72,71 @@ Topology.
 Validated at boot via zod ([src/env/server.ts](src/env/server.ts)) — the
 process refuses to start on any missing or malformed value.
 
-| Variable                              | Required | Description                                                                                                                       |
-| ------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `HYPERCACHE_API_URL`                  | yes      | Client API base URL (e.g. `http://cache:8080`).                                                                                   |
-| `HYPERCACHE_MGMT_URL`                 | yes      | Management HTTP base URL (e.g. `http://cache:8081`).                                                                              |
-| `IRON_SESSION_SECRET`                 | yes      | Cookie sealing key, ≥ 32 chars. Generate with `openssl rand -base64 48`.                                                          |
-| `IRON_SESSION_COOKIE_NAME`            | no       | Defaults to `hcm_session`. Override only for multi-instance hosts.                                                                |
-| `BASE_URL`                            | no       | Next.js `basePath` (e.g. `/web` for OpenShift sub-path routing). Defaults to `/`.                                                 |
-| `HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS` | no       | When `"true"` AND session has `admin` scope, enables the eviction control proxy. Off by default — see "Admin-scope gating" below. |
+| Variable                              | Required    | Description                                                                                                                         |
+| ------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `HYPERCACHE_MONITOR_CLUSTERS`         | conditional | Path to a YAML cluster registry (see [Multi-cluster registry](#multi-cluster-registry)). When set, overrides the URL pair below.    |
+| `HYPERCACHE_API_URL`                  | conditional | Single-cluster fallback: client API base URL (e.g. `http://cache:8080`). Required when `HYPERCACHE_MONITOR_CLUSTERS` is unset.      |
+| `HYPERCACHE_MGMT_URL`                 | conditional | Single-cluster fallback: management HTTP base URL (e.g. `http://cache:8081`). Required when `HYPERCACHE_MONITOR_CLUSTERS` is unset. |
+| `IRON_SESSION_SECRET`                 | yes         | Cookie sealing key, ≥ 32 chars. Generate with `openssl rand -base64 48`.                                                            |
+| `IRON_SESSION_COOKIE_NAME`            | no          | Defaults to `hcm_session`. Override only for multi-instance hosts.                                                                  |
+| `BASE_URL`                            | no          | Next.js `basePath` (e.g. `/web` for OpenShift sub-path routing). Defaults to `/`.                                                   |
+| `HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS` | no          | When `"true"` AND session has `admin` scope, enables the eviction control proxy. Off by default — see "Admin-scope gating" below.   |
+
+At least one cluster source must be configured: either
+`HYPERCACHE_MONITOR_CLUSTERS` (recommended) or both
+`HYPERCACHE_API_URL` + `HYPERCACHE_MGMT_URL`. If both are set, the
+YAML wins and the env-pair is ignored (logged at boot).
+
+### Multi-cluster registry
+
+For multi-cluster operation, point `HYPERCACHE_MONITOR_CLUSTERS` at
+a YAML file mapping cluster id → metadata. See
+[`clusters.example.yaml`](clusters.example.yaml) for the full shape:
+
+```yaml
+default:
+  name: "Local cluster"
+  apiBaseUrl: "http://cache:8080"
+  mgmtBaseUrl: "http://cache:8081"
+prod-eu:
+  name: "Production EU"
+  apiBaseUrl: "https://cache-eu.example.com"
+  mgmtBaseUrl: "https://cache-eu.example.com:8081"
+```
+
+Cluster ids must match `[a-zA-Z0-9_-]+` — they appear in proxy
+URLs and TanStack queryKeys. The login form renders a cluster
+`<Select>` when more than one cluster is registered; the topbar
+picker flips between clusters the operator has authenticated
+against. Each cluster requires a separate token (issued by that
+cluster's `HYPERCACHE_AUTH_CONFIG`); switching to a cluster the
+session has not bound credentials for redirects to
+`/login?cluster=<id>`.
+
+**Hostname-aware default (Phase C2).** Each entry may include an
+optional `hosts: [...]` allowlist of bare hostnames (lowercase, no
+scheme, no port). When the monitor serves multiple hostnames from a
+single binary, the matching `Host` header on `/login` preselects
+that cluster in the picker. Two clusters cannot claim the same
+host (loader rejects at boot). The Host header is never consulted
+in any auth gate — purely a UX default; operators always pick
+freely from the dropdown.
+
+**Live reload (Phase C2).** The YAML file is `fs.watchFile`-polled
+on a 2-second interval. Edits propagate to the running monitor
+without a restart. Bad parses (typo, duplicate host, removed file)
+log to stderr and keep the previous valid registry — operators
+iterate without bringing the monitor down. Single-cluster
+deployments need no YAML and keep working with the legacy
+`HYPERCACHE_API_URL` / `HYPERCACHE_MGMT_URL` pair.
+
+**Per-cluster identity (Phase C2).** The login flow probes
+`GET /v1/me` on the selected cluster. The cache returns the
+operator's resolved identity (token ID or mTLS subject CN) and
+the actual scopes the bound credential carries — no more optimistic
+three-scope grants. Pre-Phase-C2 cache binaries return 404 on
+`/v1/me`; the monitor surfaces a clear "cache server too old"
+error instead of a generic upstream failure.
 
 ## Quality gates
 

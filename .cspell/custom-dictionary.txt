@@ -13,6 +13,7 @@ govulncheck
 hrefs
 httpauth
 hypercache
+incompat
 invokable
 laggier
 libgbm
@@ -25,6 +26,8 @@ nums
 nvmrc
 omitempty
 papaparse
+reloadable
+rollouts
 shadcn
 softprops
 sparkline
