@@ -12,10 +12,33 @@ import { z } from "zod";
 import "server-only";
 
 const schema = z.object({
-  // Phase A single-cluster shortcut. Phase C swaps to a
-  // config file (HYPERCACHE_MONITOR_CLUSTERS=/etc/hypercache-monitor/clusters.yaml).
-  HYPERCACHE_API_URL: z.string().url().describe("Client API base URL (e.g. http://cache:8080)"),
-  HYPERCACHE_MGMT_URL: z.string().url().describe("Management HTTP base URL (e.g. http://cache:8081)"),
+  // Cluster registry source. EITHER set HYPERCACHE_MONITOR_CLUSTERS
+  // to a YAML file path (multi-cluster, recommended) OR set the
+  // legacy single-cluster env vars below. The cluster loader
+  // (`src/lib/clusters/loader.ts`) enforces "at least one is
+  // configured" and prefers YAML when both are set.
+  HYPERCACHE_MONITOR_CLUSTERS: z
+    .string()
+    .optional()
+    .describe(
+      "Path to a YAML file defining the cluster registry (see clusters.example.yaml). " +
+        "When set, this overrides HYPERCACHE_API_URL/HYPERCACHE_MGMT_URL.",
+    ),
+
+  // Single-cluster fallback. Optional for back-compat with Phase A
+  // / B deployments — the loader synthesizes a `default` cluster
+  // from these when HYPERCACHE_MONITOR_CLUSTERS is absent. New
+  // deployments should prefer the YAML registry.
+  HYPERCACHE_API_URL: z
+    .string()
+    .url()
+    .optional()
+    .describe("Single-cluster fallback: client API base URL (e.g. http://cache:8080)"),
+  HYPERCACHE_MGMT_URL: z
+    .string()
+    .url()
+    .optional()
+    .describe("Single-cluster fallback: management HTTP base URL (e.g. http://cache:8081)"),
 
   // iron-session secret for sealing the auth cookie. Must be at
   // least 32 chars per iron-session's own validation. Generate via

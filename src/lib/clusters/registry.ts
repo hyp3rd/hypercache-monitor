@@ -1,32 +1,42 @@
 import "server-only";
 
 import { serverEnv } from "@/env/server";
+import { DEFAULT_CLUSTER_ID, loadClusters } from "./loader";
 import type { Cluster } from "./types";
 
 /**
- * Phase A: env-driven single-cluster registry, keyed as
- * `default`. Phase C swaps to a YAML config file
- * (HYPERCACHE_MONITOR_CLUSTERS) without touching the data layer
- * — the public API of this module stays `getCluster(id)` and
- * `listClusters()`.
+ * Cluster registry. Phase C1 switched the backing storage from a
+ * hard-coded single-entry map to the YAML loader at `./loader.ts`,
+ * with an env-var fallback so single-cluster Phase A / B
+ * deployments keep working unchanged.
  *
- * Multi-cluster URL shape is baked into Phase A on purpose:
- * every proxy route already lives at
- * `/api/clusters/[clusterId]/...`, every TanStack queryKey
- * starts `["cluster", clusterId, ...]`. Adding a second cluster
- * later is a config change, not a refactor.
+ * Public API (`getCluster`, `listClusters`, `DEFAULT_CLUSTER_ID`)
+ * is unchanged — every existing caller continues to work.
+ *
+ * Multi-cluster URL shape was baked into the codebase from Phase A:
+ * every proxy route lives at `/api/clusters/[clusterId]/...`,
+ * every TanStack queryKey starts `["cluster", clusterId, ...]`.
+ * Phase C1 just lit it up.
+ *
+ * Build-phase guard mirrors `src/env/server.ts`: `next build`
+ * imports every page module to collect page data, which evaluates
+ * this file. The Docker image is built without runtime config —
+ * cluster URLs and YAML paths are injected at deploy time — so a
+ * fail-fast load here would break the image build. We return an
+ * empty registry during the build phase; each production server
+ * process re-evaluates this module on startup, at which point real
+ * config is present and the loader runs as designed.
  */
 
-const DEFAULT_CLUSTER_ID = "default";
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 
-const registry: Record<string, Cluster> = {
-  [DEFAULT_CLUSTER_ID]: {
-    id: DEFAULT_CLUSTER_ID,
-    name: "Local cluster",
-    apiBaseUrl: serverEnv.HYPERCACHE_API_URL,
-    mgmtBaseUrl: serverEnv.HYPERCACHE_MGMT_URL,
-  },
-};
+const registry: Record<string, Cluster> = isBuildPhase
+  ? {}
+  : loadClusters({
+    clustersPath: serverEnv.HYPERCACHE_MONITOR_CLUSTERS,
+    apiUrl: serverEnv.HYPERCACHE_API_URL,
+    mgmtUrl: serverEnv.HYPERCACHE_MGMT_URL,
+  });
 
 export function getCluster(id: string): Cluster | undefined {
   return registry[id];

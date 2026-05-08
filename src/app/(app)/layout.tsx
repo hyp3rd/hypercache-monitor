@@ -59,10 +59,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.6.0 · Phase B complete</p>
-          <p className="mt-1">
-            All Phase B surfaces live: Single-Key Inspector, Metrics, Bulk, Auth posture, API spec.
-          </p>
+          <p className="font-mono">v0.7.0 · Phase C1 — Multi-cluster</p>
+          <p className="mt-1">Cluster registry via YAML, per-cluster login, interactive picker.</p>
         </div>
       </aside>
 

@@ -27,10 +27,16 @@ afterEach(() => {
 });
 
 describe("env/server runtime mode", () => {
-  it("throws with a multi-issue message when required vars are missing", async () => {
+  it("throws on missing IRON_SESSION_SECRET (the only env-validator-required field post-C1)", async () => {
+    // Phase C1 made HYPERCACHE_API_URL / HYPERCACHE_MGMT_URL
+    // optional in the env validator (the cluster loader enforces
+    // "at least one cluster source is configured" separately).
+    // IRON_SESSION_SECRET is still strictly required here — no
+    // session sealing without it.
     vi.stubEnv("NEXT_PHASE", "");
     vi.stubEnv("HYPERCACHE_API_URL", "");
     vi.stubEnv("HYPERCACHE_MGMT_URL", "");
+    vi.stubEnv("HYPERCACHE_MONITOR_CLUSTERS", "");
     vi.stubEnv("IRON_SESSION_SECRET", "");
 
     await expect(import("./server")).rejects.toThrow(/Invalid environment for hypercache-monitor/);

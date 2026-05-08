@@ -28,6 +28,17 @@ import { z } from "zod";
 
 const bodySchema = z.object({
   token: z.string().min(1).max(4096),
+  // Phase C1: optional clusterId selects which cluster the token
+  // is bound to. Defaults to DEFAULT_CLUSTER_ID for back-compat
+  // with the Phase A / B single-cluster login form (token-only
+  // POST body). Cluster ID character set matches the loader's
+  // schema so we reject obvious typos at the boundary.
+  clusterId: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-zA-Z0-9_-]+$/, "clusterId must match [a-zA-Z0-9_-]+")
+    .optional(),
 });
 
 export async function POST(req: NextRequest): Promise<Response> {
@@ -40,9 +51,13 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
-  const cluster = getCluster(DEFAULT_CLUSTER_ID);
+  const clusterId = parsed.data.clusterId ?? DEFAULT_CLUSTER_ID;
+  const cluster = getCluster(clusterId);
   if (!cluster) {
-    return NextResponse.json({ error: "no cluster registered", code: "INTERNAL" }, { status: 500 });
+    return NextResponse.json(
+      { error: `unknown cluster: ${clusterId}`, code: "BAD_REQUEST" },
+      { status: 400 },
+    );
   }
 
   // Probe 1: upstream reachability (no auth required).
@@ -97,17 +112,23 @@ export async function POST(req: NextRequest): Promise<Response> {
   // is attempted. Phase C swaps this for a real /v1/me probe.
   const scopes: Scope[] = ["read", "write", "admin"];
 
+  // Identity defaults to the cluster id pending a real /v1/me
+  // endpoint on the cache (Phase C2). Multi-cluster operators
+  // get a per-cluster identity label that differentiates entries
+  // in the picker without us inventing more.
+  const identity = clusterId;
+
   const session = await getSession();
-  session.activeClusterId = DEFAULT_CLUSTER_ID;
+  session.activeClusterId = clusterId;
   session.sessions = {
     ...(session.sessions ?? {}),
-    [DEFAULT_CLUSTER_ID]: {
+    [clusterId]: {
       token: parsed.data.token,
-      identity: "default",
+      identity,
       scopes,
     },
   };
   await session.save();
 
-  return NextResponse.json({ ok: true, identity: "default", scopes });
+  return NextResponse.json({ ok: true, clusterId, identity, scopes });
 }

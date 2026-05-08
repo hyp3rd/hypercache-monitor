@@ -7,6 +7,58 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 The version label visible in the app's sidebar footer is the
 authoritative current version.
 
+## [0.7.0] — Phase C1: Multi-cluster registry
+
+First Phase C deliverable. The session shape, proxy URL layout, and
+TanStack queryKeys were already cluster-keyed from Phase A; C1 lights
+up the wiring: a YAML registry, per-cluster login binding, an
+interactive cluster picker, and a switch-cluster route. Single-cluster
+deployments need no config change — the env-var fallback synthesizes
+the same `default` entry they had before.
+
+### Added
+
+- `HYPERCACHE_MONITOR_CLUSTERS`: optional path to a YAML file mapping
+  cluster id → `{ name, apiBaseUrl, mgmtBaseUrl }`. Parsed once at boot
+  by `src/lib/clusters/loader.ts` (zod-validated, frozen output).
+  See `clusters.example.yaml` for the full shape.
+- `POST /api/auth/switch-cluster`: flips `session.activeClusterId` to
+  a cluster the operator has already authenticated against. Returns
+  `401 NEED_LOGIN` with the cluster id when no session is bound,
+  letting the picker route the operator to `/login?cluster=<id>`.
+- Login form gains a cluster `<Select>` when the registry has more
+  than one entry; the chosen cluster id rides along in the POST body.
+  Single-cluster deployments see the form unchanged.
+- Cluster picker is now interactive: clicking an "Other clusters"
+  entry POSTs to `/api/auth/switch-cluster`; on 200 the page refreshes
+  against the new active cluster, on 401 the operator is redirected
+  to `/login?cluster=<id>`.
+
+### Changed
+
+- `HYPERCACHE_API_URL` / `HYPERCACHE_MGMT_URL` are now optional in
+  `src/env/server.ts`; the cluster loader enforces "at least one
+  source is configured" with a clearer error than zod's per-field
+  message. When both YAML and env-pair are set, YAML wins and the
+  env-pair is ignored (warning logged at boot).
+- `/api/auth/login` accepts `{ token, clusterId? }`. When omitted,
+  defaults to `DEFAULT_CLUSTER_ID` for back-compat with the Phase
+  A/B single-cluster form. The selected cluster's URL is probed
+  (not always `default`), and the session is sealed under that
+  cluster's key.
+
+### Notes
+
+- Per-cluster identity from a `/v1/me`-style endpoint is **out of
+  scope** for C1; identity continues to default to the cluster id
+  until the cache exposes that endpoint (Phase C2).
+- Cluster config is read once at boot — operators restart the
+  monitor process to pick up `clusters.yaml` changes. Live reload
+  is intentionally deferred.
+- The session cookie's iron-session 4 KB ceiling implies a practical
+  ~15-20 cluster cap per operator session. Hostname-based routing
+  and server-side session storage are Phase C2 territory.
+
 ## [0.6.0] — Phase B complete
 
 Phase B finalization: B4 (Auth posture) and B5 (Live API spec)
