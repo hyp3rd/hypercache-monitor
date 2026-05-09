@@ -7,6 +7,66 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 The version label visible in the app's sidebar footer is the
 authoritative current version.
 
+## [0.9.0] — Phase C: SSE live topology
+
+Replaces `/topology`'s 2-second polling cadence with a live
+Server-Sent Events stream from the cache's new `GET /cluster/events`
+endpoint. Polling remains as the disconnect fallback so a transient
+proxy timeout doesn't blank the page.
+
+### Added
+
+- **`useTopologyEvents` hook**
+  ([src/lib/topology/use-topology-events.ts](src/lib/topology/use-topology-events.ts))
+  opens an EventSource against the cluster-aware proxy URL
+  (`/api/clusters/[id]/mgmt/cluster/events`), parses `members`
+  and `heartbeat` frames with the same zod schemas the polling
+  fetcher uses, and writes parsed snapshots into TanStack
+  Query's cache via `setQueryData`. One source of truth — every
+  existing render path on `/topology` reads from the same
+  store regardless of whether the data arrived via SSE or
+  polling. Reconnect with exponential backoff, visibility-aware
+  close/reopen, hard-disable via `enabled: false`. 9 unit
+  tests cover open/close/parse/schema-fail/cluster-swap.
+- **Polling fallback** in
+  ([topology-client.tsx](<src/app/(app)/topology/_components/topology-client.tsx>))
+  — when the hook reports `connected: true`, the `members` and
+  `heartbeat` queries set `refetchInterval: false` (no double-
+  fetching). On SSE disconnect, polling resumes within the
+  visibility-aware interval. The ring polls regardless of SSE
+  state because vnode hashes only change on membership transitions
+  (which the `members` event captures structurally).
+- **Cache-stub SSE handler**
+  ([cache-stub.ts](tests/e2e/fixtures/cache-stub.ts)) — new
+  `/cluster/events` branch that streams the same wire shape the
+  production cache emits. Initial frames at connect, plus a 1 Hz
+  `heartbeat` tick until the client disconnects.
+- **E2E coverage** in
+  ([topology.spec.ts](tests/e2e/topology.spec.ts)) — new
+  scenario asserts the EventSource opens against the cluster-aware
+  proxy URL on /topology mount.
+
+### Notes
+
+- The cache repo's matching `GET /cluster/events` SSE handler
+  landed in its own CHANGELOG entry; this monitor relies on the
+  cache's `/cluster/events` to be present. A pre-Phase-C cache
+  binary 404s the request — the EventSource fires `error`, the
+  hook's reconnect loop kicks in with exponential backoff, and
+  polling fills the gap. So mismatched-version deployments
+  degrade gracefully instead of breaking the page.
+- The proxy
+  ([src/lib/api/proxy.ts:199](src/lib/api/proxy.ts)) already
+  passed streaming responses through unchanged
+  (`new Response(upstream.body)`), so the catch-all mgmt route
+  required no refactor — the SSE response body streams from
+  cache → Next proxy → browser without buffering.
+- EventSource API doesn't support custom headers (`Authorization`
+  is rejected), but the iron-session cookie travels with the
+  request automatically. The proxy reads the cookie, retrieves
+  the bearer, and injects `Authorization: Bearer X` on the
+  cache-side request — exactly the same auth flow polling uses.
+
 ## [0.8.0] — Phase C: Eviction Controls UI
 
 The cluster-mutating control surface — evict, trigger-expiration,

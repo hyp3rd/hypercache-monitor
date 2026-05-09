@@ -16,6 +16,7 @@ import {
 } from "@/lib/api/mgmt";
 import { queryKeys } from "@/lib/query/keys";
 import { usePollInterval } from "@/lib/query/poll";
+import { useTopologyEvents } from "@/lib/topology/use-topology-events";
 import { Activity, CircuitBoard, Network } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { HeartbeatStats } from "./heartbeat-stats";
@@ -35,16 +36,30 @@ import { RingSvg } from "./ring-svg";
  */
 export function TopologyClient({ clusterId }: { clusterId: string }) {
   const interval = usePollInterval({ active: 2000, idle: 30000 });
+  // Phase C SSE: subscribe to live `members` + `heartbeat`
+  // updates. The hook writes parsed snapshots into TanStack
+  // Query's cache, so the queries below read from the same
+  // store regardless of whether the data arrived over SSE or
+  // polling. When SSE is connected, polling is disabled
+  // (`refetchInterval: false`) so we don't double-fetch; on
+  // SSE disconnect, polling resumes within `interval` ms.
+  const { connected: sseConnected } = useTopologyEvents(clusterId);
+
+  const sseRefetch = sseConnected ? false : interval;
 
   const members = useQuery({
     queryKey: queryKeys.members(clusterId),
     queryFn: () =>
       fetchMgmt(clusterId, "cluster/members", clusterMembersSchema),
-    refetchInterval: interval,
+    refetchInterval: sseRefetch,
   });
 
   const ring = useQuery({
     queryKey: queryKeys.ring(clusterId),
+    // The cache doesn't push ring events (vnode hashes only
+    // change on membership transitions, which the `members`
+    // event captures structurally). Keep polling the ring at
+    // the slower cadence regardless of SSE state.
     queryFn: () => fetchMgmt(clusterId, "cluster/ring", clusterRingSchema),
     refetchInterval: interval * 2,
   });
@@ -52,7 +67,7 @@ export function TopologyClient({ clusterId }: { clusterId: string }) {
   const heartbeat = useQuery({
     queryKey: queryKeys.heartbeat(clusterId),
     queryFn: () => fetchMgmt(clusterId, "cluster/heartbeat", heartbeatSchema),
-    refetchInterval: interval,
+    refetchInterval: sseRefetch,
   });
 
   return (

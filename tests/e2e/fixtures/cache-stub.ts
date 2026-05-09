@@ -199,6 +199,21 @@ function handle(
     return;
   }
 
+  // Phase C SSE: GET /cluster/events streams `members` and
+  // `heartbeat` frames. The stub keeps the response open and
+  // emits one `members` snapshot at connect plus a `heartbeat`
+  // tick every second until the client disconnects (req close)
+  // or the stub server is shut down (which destroys the socket
+  // and fires req close from the other side).
+  //
+  // The frames mirror the production handler's wire shape:
+  //   event: members\ndata: { replication, virtualNodes, members[] }\n\n
+  //   event: heartbeat\ndata: { heartbeatSuccess, ... }\n\n
+  if (url.pathname === "/cluster/events" && req.method === "GET") {
+    handleClusterEventsSSE(req, res);
+    return;
+  }
+
   // Phase C2 admin controls. The monitor's proxy already gates
   // these on session admin-scope client-side; we mirror the cache
   // binary's response shapes so the UI sees the right status:
@@ -751,4 +766,99 @@ function makeDistMetrics(n: number) {
     RebalanceReplicaDiffThrottle: 0,
     RebalancedPrimary: 70 * k,
   };
+}
+
+/**
+ * SSE handler for /cluster/events. Sends `retry: 5000` then a
+ * `members` snapshot + `heartbeat` snapshot at connect, and a
+ * fresh `heartbeat` snapshot every second until the client
+ * disconnects. Mirrors the production handler's frame shape so
+ * the monitor's EventSource consumer treats stub and real cache
+ * identically.
+ *
+ * Cleanup is per-connection: the heartbeat tick clears on
+ * `req.on("close")`, which fires when the client closes the
+ * EventSource OR when the stub's underlying http.Server is
+ * destroyed (its socket destruction propagates to the request).
+ */
+function handleClusterEventsSSE(
+  req: IncomingMessage,
+  res: ServerResponse,
+): void {
+  res.writeHead(200, {
+    "content-type": "text/event-stream",
+    "cache-control": "no-cache",
+    connection: "keep-alive",
+  });
+
+  // Matches the static `/cluster/members` fixture shape exactly
+  // (5 nodes, same incarnations) so existing specs that polled
+  // and asserted node-4 / node-5 visibility don't see the SSE
+  // `members` event clobber the cache with a smaller snapshot
+  // when SSE wires up.
+  const membersSnapshot = {
+    replication: 3,
+    virtualNodes: 64,
+    members: [
+      {
+        ID: "node-1",
+        Address: "hypercache-1:7946",
+        State: "alive",
+        Incarnation: 723,
+      },
+      {
+        ID: "node-2",
+        Address: "hypercache-2:7946",
+        State: "alive",
+        Incarnation: 723,
+      },
+      {
+        ID: "node-3",
+        Address: "hypercache-3:7946",
+        State: "alive",
+        Incarnation: 723,
+      },
+      {
+        ID: "node-4",
+        Address: "hypercache-4:7946",
+        State: "alive",
+        Incarnation: 723,
+      },
+      {
+        ID: "node-5",
+        Address: "hypercache-5:7946",
+        State: "alive",
+        Incarnation: 1,
+      },
+    ],
+  };
+
+  const heartbeatSnapshot = (probes: number) => ({
+    heartbeatSuccess: 12000 + probes,
+    heartbeatFailure: 7,
+    nodesRemoved: 0,
+    readPrimaryPromote: 2,
+  });
+
+  res.write(`retry: 5000\n\n`);
+  res.write(`event: members\ndata: ${JSON.stringify(membersSnapshot)}\n\n`);
+  res.write(
+    `event: heartbeat\ndata: ${JSON.stringify(heartbeatSnapshot(0))}\n\n`,
+  );
+
+  let probes = 0;
+  const tick = setInterval(() => {
+    probes += 1;
+    // Node's writable.write returns false when buffered; we
+    // ignore — the test connections are short-lived and the
+    // backpressure isn't a real concern at this rate.
+    res.write(
+      `event: heartbeat\ndata: ${JSON.stringify(heartbeatSnapshot(probes))}\n\n`,
+    );
+  }, 1000);
+
+  req.on("close", () => {
+    clearInterval(tick);
+    res.end();
+  });
 }
