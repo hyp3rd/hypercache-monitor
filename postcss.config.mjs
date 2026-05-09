@@ -2,10 +2,6 @@
 // straight from the imported CSS — no `tailwind.config.js` file is
 // needed. See `src/app/globals.css` for the `@theme` block.
 
-const config = {
-  plugins: {
-    "@tailwindcss/postcss": {},
-  },
-};
+const config = { plugins: { "@tailwindcss/postcss": {} } };
 
 export default config;
