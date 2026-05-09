@@ -36,26 +36,36 @@ test.describe("api spec viewer", () => {
     await page.goto("/spec");
 
     // Page heading
-    await expect(page.getByRole("heading", { name: "API spec", level: 1 })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "API spec", level: 1 }),
+    ).toBeVisible();
 
     // GET operation surfaces (read-method, kept by the filter).
-    await expect(page.getByRole("heading", { name: "Fetch a key's value and metadata." })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Fetch a key's value and metadata." }),
+    ).toBeVisible();
 
     // Method badge for the GET operation
     await expect(page.getByText("get", { exact: true })).toBeVisible();
 
     // The path is rendered as a `<code>` element
-    await expect(page.getByText("/v1/cache/{key}", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("/v1/cache/{key}", { exact: true }),
+    ).toBeVisible();
 
     // DELETE operation must NOT render — filterToSafeMethods
     // dropped it before reaching the renderer.
-    await expect(page.getByText("Delete a key from the cluster.")).toHaveCount(0);
+    await expect(page.getByText("Delete a key from the cluster.")).toHaveCount(
+      0,
+    );
   });
 
   test("a11y: no axe-core violations on /spec", async ({ page }) => {
     await login(page);
     await page.goto("/spec");
-    await expect(page.getByRole("heading", { name: "Fetch a key's value and metadata." })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Fetch a key's value and metadata." }),
+    ).toBeVisible();
 
     // Same `color-contrast` disable as topology / metrics / bulk
     // for the dark-theme rationale documented in topology.spec.ts.

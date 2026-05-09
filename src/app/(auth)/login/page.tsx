@@ -41,21 +41,27 @@ export default async function LoginPage({
   const clustersFull = listClusters();
   const clusters = clustersFull.map(toListItem);
   const params = await searchParams;
-  const requestedCluster = typeof params.cluster === "string" ? params.cluster : undefined;
+  const requestedCluster =
+    typeof params.cluster === "string" ? params.cluster : undefined;
 
   // Strip port + lowercase to match the loader's normalized hostname
   // form. The browser routinely sends "host.example.com:8443"; the
   // YAML stores "host.example.com".
-  const requestHost = (await headers()).get("host")?.split(":")[0]?.toLowerCase();
+  const requestHost = (await headers())
+    .get("host")
+    ?.split(":")[0]
+    ?.toLowerCase();
   const matchByHost = requestHost
-    ? (clustersFull.find((c) => c.hosts?.includes(requestHost))?.id ?? undefined)
+    ? (clustersFull.find((c) => c.hosts?.includes(requestHost))?.id ??
+      undefined)
     : undefined;
 
   // If the URL preselects a cluster but it's not in the registry,
   // ignore the param rather than render a confusing pre-broken
   // form. The picker only links here for clusters that exist.
   const preselected =
-    requestedCluster !== undefined && clusters.some((c) => c.id === requestedCluster)
+    requestedCluster !== undefined &&
+    clusters.some((c) => c.id === requestedCluster)
       ? requestedCluster
       : (matchByHost ?? clusters[0]?.id ?? undefined);
 
@@ -68,16 +74,25 @@ export default async function LoginPage({
       />
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
-          <BrandMark size={56} className="brand-glow" />
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight">HyperCache Monitor</h1>
+          <BrandMark
+            size={56}
+            className="brand-glow"
+          />
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight">
+            HyperCache Monitor
+          </h1>
           <p className="text-muted-foreground mt-2 text-sm">
             Operator control panel for distributed cache clusters.
           </p>
         </div>
-        <LoginForm clusters={clusters} preselectedClusterId={preselected} />
+        <LoginForm
+          clusters={clusters}
+          preselectedClusterId={preselected}
+        />
         <p className="text-muted-foreground mt-6 text-center text-xs">
           Tokens are issued out-of-band by your cluster operator.{" "}
-          <span className="font-mono">HYPERCACHE_AUTH_CONFIG</span> defines available identities.
+          <span className="font-mono">HYPERCACHE_AUTH_CONFIG</span> defines
+          available identities.
         </p>
       </div>
     </main>

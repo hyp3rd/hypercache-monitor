@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { clusterMembersSchema, clusterRingSchema, heartbeatSchema, vnodeSchema } from "./mgmt";
+import {
+  clusterMembersSchema,
+  clusterRingSchema,
+  heartbeatSchema,
+  vnodeSchema,
+} from "./mgmt";
 
 /**
  * Schema fixture tests. The mgmt HTTP wrapper is hand-written
@@ -19,14 +24,34 @@ describe("memberSchema (PascalCase wire → camelCase parsed)", () => {
       replication: 3,
       virtualNodes: 64,
       members: [
-        { ID: "node-1", Address: "hypercache-1:7946", State: "alive", Incarnation: 723 },
-        { ID: "node-5", Address: "hypercache-5:7946", State: "alive", Incarnation: 1 },
+        {
+          ID: "node-1",
+          Address: "hypercache-1:7946",
+          State: "alive",
+          Incarnation: 723,
+        },
+        {
+          ID: "node-5",
+          Address: "hypercache-5:7946",
+          State: "alive",
+          Incarnation: 1,
+        },
       ],
     };
     const parsed = clusterMembersSchema.parse(fixture);
     expect(parsed.members).toEqual([
-      { id: "node-1", address: "hypercache-1:7946", state: "alive", incarnation: 723 },
-      { id: "node-5", address: "hypercache-5:7946", state: "alive", incarnation: 1 },
+      {
+        id: "node-1",
+        address: "hypercache-1:7946",
+        state: "alive",
+        incarnation: 723,
+      },
+      {
+        id: "node-5",
+        address: "hypercache-5:7946",
+        state: "alive",
+        incarnation: 1,
+      },
     ]);
     expect(parsed.replication).toBe(3);
     expect(parsed.virtualNodes).toBe(64);

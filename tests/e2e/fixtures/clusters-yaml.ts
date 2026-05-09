@@ -1,7 +1,12 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { STUB_API_URL, STUB_API_URL_B, STUB_MGMT_URL, STUB_MGMT_URL_B } from "./cache-stub";
+import {
+  STUB_API_URL,
+  STUB_API_URL_B,
+  STUB_MGMT_URL,
+  STUB_MGMT_URL_B,
+} from "./cache-stub";
 
 /**
  * Path of the temp `clusters.yaml` consumed by the Next.js
@@ -29,7 +34,10 @@ import { STUB_API_URL, STUB_API_URL_B, STUB_MGMT_URL, STUB_MGMT_URL_B } from "./
  * Single deterministic location across runs is fine — the suite
  * is `workers: 1`, so there is no parallel-write contention.
  */
-export const CLUSTERS_YAML_PATH = join(tmpdir(), "hypercache-monitor-e2e-clusters.yaml");
+export const CLUSTERS_YAML_PATH = join(
+  tmpdir(),
+  "hypercache-monitor-e2e-clusters.yaml",
+);
 
 const yaml = `default:
   name: "Default cluster"

@@ -50,7 +50,9 @@ export class RingBuffer {
       // Capacity < 2 makes deltas impossible — a single sample
       // can't have a rate. Throwing here surfaces caller bugs
       // immediately instead of returning silently-empty rates.
-      throw new Error(`RingBuffer capacity must be an integer >= 2, got ${capacity}`);
+      throw new Error(
+        `RingBuffer capacity must be an integer >= 2, got ${capacity}`,
+      );
     }
     this.capacity = capacity;
   }

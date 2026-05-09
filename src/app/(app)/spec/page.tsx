@@ -6,7 +6,8 @@ import { SpecViewer } from "./_components/spec-viewer";
 
 export const metadata: Metadata = {
   title: "API spec",
-  description: "Live OpenAPI 3.x reference for the cache cluster, read-only Try-It-Out.",
+  description:
+    "Live OpenAPI 3.x reference for the cache cluster, read-only Try-It-Out.",
 };
 
 /**
@@ -44,32 +45,48 @@ export default async function SpecPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-muted-foreground text-[11px] font-medium tracking-[0.18em] uppercase">Reference</p>
+        <p className="text-muted-foreground text-[11px] font-medium tracking-[0.18em] uppercase">
+          Reference
+        </p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">API spec</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
           Live OpenAPI reference for{" "}
-          <span className="text-foreground font-mono font-semibold">{auth.clusterId}</span>. Read-only methods
-          (GET, HEAD) support interactive probing here; writes are documented and invokable from{" "}
-          <span className="text-foreground font-medium">Single-Key Inspector</span> or{" "}
-          <span className="text-foreground font-medium">Bulk operations</span>, where each destructive op is
-          gated by an explicit confirmation.
+          <span className="text-foreground font-mono font-semibold">
+            {auth.clusterId}
+          </span>
+          . Read-only methods (GET, HEAD) support interactive probing here;
+          writes are documented and invokable from{" "}
+          <span className="text-foreground font-medium">
+            Single-Key Inspector
+          </span>{" "}
+          or{" "}
+          <span className="text-foreground font-medium">Bulk operations</span>,
+          where each destructive op is gated by an explicit confirmation.
         </p>
       </header>
 
-      {spec ? <SpecViewer spec={spec} /> : <SpecFallback message={error ?? "unknown error"} />}
+      {spec ? (
+        <SpecViewer spec={spec} />
+      ) : (
+        <SpecFallback message={error ?? "unknown error"} />
+      )}
     </div>
   );
 }
 
 function SpecFallback({ message }: { message: string }) {
   return (
-    <div role="alert" className="border-border/50 bg-card/60 rounded-lg border p-4 text-sm backdrop-blur">
+    <div
+      role="alert"
+      className="border-border/50 bg-card/60 rounded-lg border p-4 text-sm backdrop-blur"
+    >
       <p className="text-foreground font-semibold">Spec unavailable</p>
       <p className="text-muted-foreground mt-1 text-xs">
         Could not fetch the cache&apos;s OpenAPI spec —{" "}
-        <span className="text-destructive font-mono">{message}</span>. The cache exposes the raw spec at{" "}
-        <span className="text-foreground font-mono">/v1/openapi.yaml</span> if you need to inspect it
-        directly.
+        <span className="text-destructive font-mono">{message}</span>. The cache
+        exposes the raw spec at{" "}
+        <span className="text-foreground font-mono">/v1/openapi.yaml</span> if
+        you need to inspect it directly.
       </p>
     </div>
   );

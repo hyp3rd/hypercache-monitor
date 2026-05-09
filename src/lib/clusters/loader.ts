@@ -52,7 +52,10 @@ const clusterEntrySchema = z.object({
       z
         .string()
         .min(1, "host cannot be empty")
-        .regex(hostnameRegex, "host must be a bare lowercase hostname (no scheme, no port)"),
+        .regex(
+          hostnameRegex,
+          "host must be a bare lowercase hostname (no scheme, no port)",
+        ),
     )
     .optional(),
 });
@@ -138,7 +141,12 @@ export function loadClusters(input: LoaderInput): Record<string, Cluster> {
     return parseYamlFile(clustersPath, readFile);
   }
 
-  if (apiUrl !== undefined && apiUrl !== "" && mgmtUrl !== undefined && mgmtUrl !== "") {
+  if (
+    apiUrl !== undefined &&
+    apiUrl !== "" &&
+    mgmtUrl !== undefined &&
+    mgmtUrl !== ""
+  ) {
     return Object.freeze({
       [DEFAULT_CLUSTER_ID]: {
         id: DEFAULT_CLUSTER_ID,
@@ -155,25 +163,36 @@ export function loadClusters(input: LoaderInput): Record<string, Cluster> {
   );
 }
 
-function parseYamlFile(path: string, readFile: (p: string) => string): Record<string, Cluster> {
+function parseYamlFile(
+  path: string,
+  readFile: (p: string) => string,
+): Record<string, Cluster> {
   let text: string;
   try {
     text = readFile(path);
   } catch (err) {
-    throw new ClusterLoaderError(`failed to read clusters file at ${path}: ${(err as Error).message}`);
+    throw new ClusterLoaderError(
+      `failed to read clusters file at ${path}: ${(err as Error).message}`,
+    );
   }
 
   let raw: unknown;
   try {
     raw = load(text);
   } catch (err) {
-    throw new ClusterLoaderError(`failed to parse clusters YAML at ${path}: ${(err as Error).message}`);
+    throw new ClusterLoaderError(
+      `failed to parse clusters YAML at ${path}: ${(err as Error).message}`,
+    );
   }
 
   const parsed = clustersFileSchema.safeParse(raw);
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
-    throw new ClusterLoaderError(`invalid clusters YAML at ${path}:\n${issues}`);
+    const issues = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
+    throw new ClusterLoaderError(
+      `invalid clusters YAML at ${path}:\n${issues}`,
+    );
   }
 
   // Project each entry to the full `Cluster` shape (id is the

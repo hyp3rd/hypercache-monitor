@@ -72,7 +72,9 @@ export function ClusterPicker({
       }
 
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        const body = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
         setError(body.error ?? `switch failed (${response.status})`);
         setPendingId(null);
         return;
@@ -86,9 +88,15 @@ export function ClusterPicker({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-10 gap-3 px-3">
+        <Button
+          variant="ghost"
+          className="h-10 gap-3 px-3"
+        >
           <span className="bg-brand-muted text-primary flex h-7 w-7 items-center justify-center rounded-md">
-            <Server aria-hidden className="h-3.5 w-3.5" />
+            <Server
+              aria-hidden
+              className="h-3.5 w-3.5"
+            />
           </span>
           <span className="flex flex-col items-start leading-tight">
             <span className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase">
@@ -96,19 +104,36 @@ export function ClusterPicker({
             </span>
             <span className="font-semibold">{active?.name ?? activeId}</span>
           </span>
-          <span aria-hidden className="bg-border/60 mx-1 h-6 w-px" />
+          <span
+            aria-hidden
+            className="bg-border/60 mx-1 h-6 w-px"
+          />
           <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
-            <User aria-hidden className="h-3 w-3" />
-            <span className="text-foreground font-mono font-medium">{identity}</span>
+            <User
+              aria-hidden
+              className="h-3 w-3"
+            />
+            <span className="text-foreground font-mono font-medium">
+              {identity}
+            </span>
           </span>
-          <ChevronsUpDown aria-hidden className="text-muted-foreground h-3.5 w-3.5" />
+          <ChevronsUpDown
+            aria-hidden
+            className="text-muted-foreground h-3.5 w-3.5"
+          />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-72">
+      <DropdownMenuContent
+        align="start"
+        className="w-72"
+      >
         <DropdownMenuLabel className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
           Active cluster
         </DropdownMenuLabel>
-        <DropdownMenuItem disabled className="font-medium">
+        <DropdownMenuItem
+          disabled
+          className="font-medium"
+        >
           {active?.name ?? activeId}
         </DropdownMenuItem>
         {others.length > 0 ? (
@@ -131,10 +156,15 @@ export function ClusterPicker({
               >
                 <span className="flex flex-col">
                   <span className="font-medium">{c.name}</span>
-                  <span className="text-muted-foreground font-mono text-[10px]">{c.id}</span>
+                  <span className="text-muted-foreground font-mono text-[10px]">
+                    {c.id}
+                  </span>
                 </span>
                 {pendingId === c.id ? (
-                  <Loader2 aria-hidden className="text-muted-foreground h-3.5 w-3.5 animate-spin" />
+                  <Loader2
+                    aria-hidden
+                    className="text-muted-foreground h-3.5 w-3.5 animate-spin"
+                  />
                 ) : null}
               </DropdownMenuItem>
             ))}
@@ -154,7 +184,10 @@ export function ClusterPicker({
         ) : (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled className="text-muted-foreground text-xs">
+            <DropdownMenuItem
+              disabled
+              className="text-muted-foreground text-xs"
+            >
               Single-cluster deployment.
             </DropdownMenuItem>
           </>

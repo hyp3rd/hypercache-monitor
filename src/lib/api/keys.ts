@@ -61,10 +61,7 @@ export const ownersResponseSchema = z.object({
 });
 export type OwnersResponse = z.infer<typeof ownersResponseSchema>;
 
-const errorEnvelopeSchema = z.object({
-  error: z.string(),
-  code: z.string(),
-});
+const errorEnvelopeSchema = z.object({ error: z.string(), code: z.string() });
 
 // ---- Errors ----------------------------------------------------------
 
@@ -91,7 +88,11 @@ async function readError(response: Response): Promise<CacheApiError> {
   if (env.success) {
     return new CacheApiError(response.status, env.data.code, env.data.error);
   }
-  return new CacheApiError(response.status, "UNKNOWN", `HTTP ${response.status}`);
+  return new CacheApiError(
+    response.status,
+    "UNKNOWN",
+    `HTTP ${response.status}`,
+  );
 }
 
 // ---- Helpers ---------------------------------------------------------
@@ -115,7 +116,10 @@ const baseFetchInit: RequestInit = {
  * for every other failure so React Query's error boundary
  * can branch.
  */
-export async function fetchKey(clusterId: string, key: string): Promise<ItemEnvelope | null> {
+export async function fetchKey(
+  clusterId: string,
+  key: string,
+): Promise<ItemEnvelope | null> {
   const response = await fetch(apiPath(clusterId, "v1", "cache", key), {
     ...baseFetchInit,
     headers: { accept: "application/json" },
@@ -144,7 +148,8 @@ export async function headKey(
   if (response.status === 404) return null;
   if (!response.ok) throw await readError(response);
 
-  const owners = response.headers.get("x-cache-owners")?.split(",").filter(Boolean) ?? [];
+  const owners =
+    response.headers.get("x-cache-owners")?.split(",").filter(Boolean) ?? [];
   const versionHdr = response.headers.get("x-cache-version");
   const ttlHdr = response.headers.get("x-cache-ttl-ms");
 
@@ -159,7 +164,10 @@ export async function headKey(
  * Resolve ring owners for any key — even keys that have never
  * been written. Pure visibility endpoint, no cache state read.
  */
-export async function fetchOwners(clusterId: string, key: string): Promise<OwnersResponse> {
+export async function fetchOwners(
+  clusterId: string,
+  key: string,
+): Promise<OwnersResponse> {
   const response = await fetch(apiPath(clusterId, "v1", "owners", key), {
     ...baseFetchInit,
     headers: { accept: "application/json" },
@@ -184,8 +192,17 @@ export interface PutKeyArgs {
   contentType?: string;
 }
 
-export async function putKey({ clusterId, key, body, ttl, contentType }: PutKeyArgs): Promise<PutResponse> {
-  const url = new URL(apiPath(clusterId, "v1", "cache", key), window.location.origin);
+export async function putKey({
+  clusterId,
+  key,
+  body,
+  ttl,
+  contentType,
+}: PutKeyArgs): Promise<PutResponse> {
+  const url = new URL(
+    apiPath(clusterId, "v1", "cache", key),
+    window.location.origin,
+  );
   if (ttl !== undefined && ttl !== "") {
     url.searchParams.set("ttl", ttl);
   }
@@ -207,7 +224,10 @@ export async function putKey({ clusterId, key, body, ttl, contentType }: PutKeyA
  * 200 with `deleted: true`. The owners list reflects where
  * the key would live, useful for follow-up verification.
  */
-export async function deleteKey(clusterId: string, key: string): Promise<DeleteResponse> {
+export async function deleteKey(
+  clusterId: string,
+  key: string,
+): Promise<DeleteResponse> {
   const response = await fetch(apiPath(clusterId, "v1", "cache", key), {
     ...baseFetchInit,
     method: "DELETE",

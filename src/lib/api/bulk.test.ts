@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { batchDeleteResponseSchema, batchGetResponseSchema, batchPutResponseSchema } from "./bulk";
+import {
+  batchDeleteResponseSchema,
+  batchGetResponseSchema,
+  batchPutResponseSchema,
+} from "./bulk";
 
 /**
  * Schema-only tests for the batch wrappers. The fetcher
@@ -42,7 +46,9 @@ describe("batchGetResponseSchema", () => {
       node: "node-1",
       results: [{ key: "k1", found: false, future_field: "ignored" }],
     });
-    expect((parsed.results[0] as Record<string, unknown>).future_field).toBe("ignored");
+    expect((parsed.results[0] as Record<string, unknown>).future_field).toBe(
+      "ignored",
+    );
   });
 });
 
@@ -85,7 +91,14 @@ describe("batchDeleteResponseSchema", () => {
   it("parses a failed-delete result with error/code", () => {
     const parsed = batchDeleteResponseSchema.parse({
       node: "node-1",
-      results: [{ key: "x", deleted: false, error: "remove failed: timeout", code: "UPSTREAM" }],
+      results: [
+        {
+          key: "x",
+          deleted: false,
+          error: "remove failed: timeout",
+          code: "UPSTREAM",
+        },
+      ],
     });
     expect(parsed.results[0]?.deleted).toBe(false);
     expect(parsed.results[0]?.code).toBe("UPSTREAM");

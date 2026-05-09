@@ -2,7 +2,12 @@
 
 import type { Heartbeat } from "@/lib/api/mgmt";
 import { cn } from "@/lib/utils";
-import { Activity, AlertTriangle, ArrowUpRightFromCircle, UserMinus } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowUpRightFromCircle,
+  UserMinus,
+} from "lucide-react";
 
 /**
  * Heartbeat stats with rich visual treatment. Each stat has its
@@ -72,7 +77,11 @@ const toneStyles: Record<Stat["tone"], string> = {
 export function HeartbeatStats({ data }: { data: Heartbeat }) {
   const present = STATS.filter((s) => typeof data[s.key] === "number");
   if (present.length === 0) {
-    return <p className="text-muted-foreground text-sm">No heartbeat metrics reported.</p>;
+    return (
+      <p className="text-muted-foreground text-sm">
+        No heartbeat metrics reported.
+      </p>
+    );
   }
 
   const success = (data.heartbeatSuccess ?? 0) as number;
@@ -90,13 +99,17 @@ export function HeartbeatStats({ data }: { data: Heartbeat }) {
             </p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">
               {successRate.toFixed(2)}
-              <span className="text-muted-foreground ml-0.5 text-base font-normal">%</span>
+              <span className="text-muted-foreground ml-0.5 text-base font-normal">
+                %
+              </span>
             </p>
           </div>
           <div className="text-muted-foreground text-right text-xs">
             <p>
-              <span className="text-foreground font-mono">{success.toLocaleString()}</span> /{" "}
-              {total.toLocaleString()} probes
+              <span className="text-foreground font-mono">
+                {success.toLocaleString()}
+              </span>{" "}
+              / {total.toLocaleString()} probes
             </p>
           </div>
         </div>
@@ -109,25 +122,35 @@ export function HeartbeatStats({ data }: { data: Heartbeat }) {
        * dl/dt/dd shape. <ul role="list"> with <figure> items
        * carries the same semantics for screen readers without
        * the structural violation. */}
-      <ul role="list" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <ul
+        role="list"
+        className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+      >
         {present.map(({ key, label, description, Icon, tone }) => (
           <li key={String(key)}>
             <figure className="group border-border/50 bg-card/50 hover:border-border hover:bg-card relative overflow-hidden rounded-lg border p-3 transition-colors">
               <div className="flex items-start justify-between gap-2">
-                <figcaption className="text-muted-foreground text-xs font-medium">{label}</figcaption>
+                <figcaption className="text-muted-foreground text-xs font-medium">
+                  {label}
+                </figcaption>
                 <span
                   className={cn(
                     "flex h-7 w-7 items-center justify-center rounded-md ring-1",
                     toneStyles[tone],
                   )}
                 >
-                  <Icon aria-hidden className="h-3.5 w-3.5" />
+                  <Icon
+                    aria-hidden
+                    className="h-3.5 w-3.5"
+                  />
                 </span>
               </div>
               <p className="mt-2 font-mono text-xl font-semibold tabular-nums">
                 {(data[key] as number).toLocaleString()}
               </p>
-              <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+              <p className="text-muted-foreground mt-1 text-xs">
+                {description}
+              </p>
             </figure>
           </li>
         ))}

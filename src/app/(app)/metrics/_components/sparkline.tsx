@@ -49,13 +49,38 @@ export function Sparkline({
 
   const id = `spark-${ariaLabel.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   return (
-    <div role="img" aria-label={ariaLabel} className="h-8 w-full">
-      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 100, height: 32 }}>
-        <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+    <div
+      role="img"
+      aria-label={ariaLabel}
+      className="h-8 w-full"
+    >
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        initialDimension={{ width: 100, height: 32 }}
+      >
+        <AreaChart
+          data={data}
+          margin={{ top: 2, right: 0, bottom: 0, left: 0 }}
+        >
           <defs>
-            <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.45} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            <linearGradient
+              id={id}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop
+                offset="0%"
+                stopColor={color}
+                stopOpacity={0.45}
+              />
+              <stop
+                offset="100%"
+                stopColor={color}
+                stopOpacity={0}
+              />
             </linearGradient>
           </defs>
           <Area

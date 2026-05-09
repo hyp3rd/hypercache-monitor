@@ -34,7 +34,10 @@ export function KeySearch({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3"
+    >
       <div className="space-y-2">
         <Label
           htmlFor="key-input"
@@ -53,8 +56,15 @@ export function KeySearch({
           className="font-mono"
         />
       </div>
-      <Button type="submit" className="w-full gap-2" disabled={value.trim() === ""}>
-        <Search aria-hidden className="h-4 w-4" />
+      <Button
+        type="submit"
+        className="w-full gap-2"
+        disabled={value.trim() === ""}
+      >
+        <Search
+          aria-hidden
+          className="h-4 w-4"
+        />
         Inspect
       </Button>
     </form>

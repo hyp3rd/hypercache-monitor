@@ -225,14 +225,23 @@ export type DistMetrics = z.infer<typeof distMetricsSchema>;
 
 // ---- Fetchers --------------------------------------------------
 
-export function fetchConfig(clusterId: string, init?: RequestInit): Promise<CacheConfig> {
+export function fetchConfig(
+  clusterId: string,
+  init?: RequestInit,
+): Promise<CacheConfig> {
   return fetchMgmt(clusterId, "config", configSchema, init);
 }
 
-export function fetchStats(clusterId: string, init?: RequestInit): Promise<Stats> {
+export function fetchStats(
+  clusterId: string,
+  init?: RequestInit,
+): Promise<Stats> {
   return fetchMgmt(clusterId, "stats", statsSchema, init);
 }
 
-export function fetchDistMetrics(clusterId: string, init?: RequestInit): Promise<DistMetrics> {
+export function fetchDistMetrics(
+  clusterId: string,
+  init?: RequestInit,
+): Promise<DistMetrics> {
   return fetchMgmt(clusterId, "dist/metrics", distMetricsSchema, init);
 }

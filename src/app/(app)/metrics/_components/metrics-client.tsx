@@ -28,22 +28,51 @@ export function MetricsClient({ clusterId }: { clusterId: string }) {
 
   return (
     <div className="space-y-5">
-      {config.error && <ErrorBanner section="Capacity" message={(config.error as Error).message} />}
-      {distMetrics.error && (
-        <ErrorBanner section="Distributed metrics" message={(distMetrics.error as Error).message} />
+      {config.error && (
+        <ErrorBanner
+          section="Capacity"
+          message={(config.error as Error).message}
+        />
       )}
-      {stats.error && <ErrorBanner section="Per-name stats" message={(stats.error as Error).message} />}
+      {distMetrics.error && (
+        <ErrorBanner
+          section="Distributed metrics"
+          message={(distMetrics.error as Error).message}
+        />
+      )}
+      {stats.error && (
+        <ErrorBanner
+          section="Per-name stats"
+          message={(stats.error as Error).message}
+        />
+      )}
 
-      {config.isLoading ? <CardSkeleton /> : <CapacityCard config={config.data} />}
+      {config.isLoading ? (
+        <CardSkeleton />
+      ) : (
+        <CapacityCard config={config.data} />
+      )}
       {distMetrics.isLoading ? (
         <CardSkeleton tall />
       ) : (
         <>
           <TrafficCard series={series} />
-          <ReliabilityCard series={series} data={distMetrics.data} />
-          <RepairCard series={series} data={distMetrics.data} />
-          <MembershipCard data={distMetrics.data} series={series} />
-          <HintedHandoffCard series={series} data={distMetrics.data} />
+          <ReliabilityCard
+            series={series}
+            data={distMetrics.data}
+          />
+          <RepairCard
+            series={series}
+            data={distMetrics.data}
+          />
+          <MembershipCard
+            data={distMetrics.data}
+            series={series}
+          />
+          <HintedHandoffCard
+            series={series}
+            data={distMetrics.data}
+          />
           <RebalanceCard series={series} />
         </>
       )}
@@ -59,14 +88,23 @@ function CardSkeleton({ tall }: { tall?: boolean }) {
       <Skeleton className="mb-4 h-3 w-64" />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {Array.from({ length: tall ? 8 : 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full" />
+          <Skeleton
+            key={i}
+            className="h-24 w-full"
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function ErrorBanner({ section, message }: { section: string; message: string }) {
+function ErrorBanner({
+  section,
+  message,
+}: {
+  section: string;
+  message: string;
+}) {
   return (
     <div
       role="alert"

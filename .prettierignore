@@ -16,3 +16,4 @@ LICENSE
 .cspell/
 .github/
 .pre-commit/
+.vscode/settings.json

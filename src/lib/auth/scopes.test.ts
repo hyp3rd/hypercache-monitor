@@ -20,8 +20,14 @@ describe("scopeCatalog", () => {
       const entry = scopeCatalog[scope];
       expect(entry, `missing catalog entry for ${scope}`).toBeDefined();
       expect(entry.label.length, `empty label for ${scope}`).toBeGreaterThan(0);
-      expect(entry.summary.length, `empty summary for ${scope}`).toBeGreaterThan(0);
-      expect(entry.actions.length, `empty actions list for ${scope}`).toBeGreaterThan(0);
+      expect(
+        entry.summary.length,
+        `empty summary for ${scope}`,
+      ).toBeGreaterThan(0);
+      expect(
+        entry.actions.length,
+        `empty actions list for ${scope}`,
+      ).toBeGreaterThan(0);
     }
   });
 

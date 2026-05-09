@@ -1,6 +1,11 @@
 "use client";
 
-import { fetchConfig, fetchDistMetrics, fetchStats, type DistMetrics } from "@/lib/api/metrics";
+import {
+  fetchConfig,
+  fetchDistMetrics,
+  fetchStats,
+  type DistMetrics,
+} from "@/lib/api/metrics";
 import { queryKeys } from "@/lib/query/keys";
 import { usePollInterval } from "@/lib/query/poll";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -114,7 +119,9 @@ interface BufferStore {
 }
 
 function createBufferStore(): BufferStore {
-  const buffers = new Map(TRACKED_FIELDS.map((f) => [f, new RingBuffer(RING_CAPACITY)] as const));
+  const buffers = new Map(
+    TRACKED_FIELDS.map((f) => [f, new RingBuffer(RING_CAPACITY)] as const),
+  );
   const listeners = new Set<() => void>();
   let snapshot = emptySeriesRecord();
 
@@ -159,7 +166,10 @@ function emptySeriesRecord(): Record<TrackedField, FieldSeries> {
 }
 
 export function useMetricsPolling(clusterId: string) {
-  const interval = usePollInterval({ active: POLL_ACTIVE_MS, idle: POLL_IDLE_MS });
+  const interval = usePollInterval({
+    active: POLL_ACTIVE_MS,
+    idle: POLL_IDLE_MS,
+  });
 
   const config = useQuery({
     queryKey: queryKeys.config(clusterId),
@@ -190,13 +200,11 @@ export function useMetricsPolling(clusterId: string) {
     store.push(distMetrics.data, distMetrics.dataUpdatedAt);
   }, [distMetrics.data, distMetrics.dataUpdatedAt, store]);
 
-  const series = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const series = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot,
+  );
 
-  return {
-    config,
-    stats,
-    distMetrics,
-    series,
-    interval,
-  };
+  return { config, stats, distMetrics, series, interval };
 }

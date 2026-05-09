@@ -22,28 +22,50 @@ export function BulkClient({ clusterId }: { clusterId: string }) {
   const [tab, setTab] = useState<"fetch" | "put" | "delete">("fetch");
 
   return (
-    <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="space-y-5">
+    <Tabs
+      value={tab}
+      onValueChange={(v) => setTab(v as typeof tab)}
+      className="space-y-5"
+    >
       <TabsList>
         <TabsTrigger value="fetch">
-          <Download aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+          <Download
+            aria-hidden
+            className="mr-1.5 h-3.5 w-3.5"
+          />
           Fetch
         </TabsTrigger>
         <TabsTrigger value="put">
-          <Upload aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+          <Upload
+            aria-hidden
+            className="mr-1.5 h-3.5 w-3.5"
+          />
           Put
         </TabsTrigger>
         <TabsTrigger value="delete">
-          <Trash2 aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+          <Trash2
+            aria-hidden
+            className="mr-1.5 h-3.5 w-3.5"
+          />
           Delete
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="fetch" className="space-y-0">
+      <TabsContent
+        value="fetch"
+        className="space-y-0"
+      >
         <FetchTab clusterId={clusterId} />
       </TabsContent>
-      <TabsContent value="put" className="space-y-0">
+      <TabsContent
+        value="put"
+        className="space-y-0"
+      >
         <PutTab clusterId={clusterId} />
       </TabsContent>
-      <TabsContent value="delete" className="space-y-0">
+      <TabsContent
+        value="delete"
+        className="space-y-0"
+      >
         <DeleteTab clusterId={clusterId} />
       </TabsContent>
     </Tabs>

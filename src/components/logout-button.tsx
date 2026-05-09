@@ -18,8 +18,17 @@ export function LogoutButton() {
   }
 
   return (
-    <Button variant="ghost" size="icon" onClick={onClick} disabled={pending} aria-label="Sign out">
-      <LogOut aria-hidden className="h-4 w-4" />
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onClick}
+      disabled={pending}
+      aria-label="Sign out"
+    >
+      <LogOut
+        aria-hidden
+        className="h-4 w-4"
+      />
     </Button>
   );
 }

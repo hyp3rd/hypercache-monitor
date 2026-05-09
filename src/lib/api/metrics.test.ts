@@ -56,8 +56,24 @@ describe("configSchema", () => {
 describe("statsSchema", () => {
   it("parses a populated dynamic-keys map", () => {
     const wire = {
-      "cache.get": { Mean: 1.5, Median: 1, Min: 0, Max: 5, Count: 100, Sum: 150, Variance: 0.25 },
-      "cache.set": { Mean: 2.1, Median: 2, Min: 1, Max: 8, Count: 50, Sum: 105, Variance: 0.5 },
+      "cache.get": {
+        Mean: 1.5,
+        Median: 1,
+        Min: 0,
+        Max: 5,
+        Count: 100,
+        Sum: 150,
+        Variance: 0.25,
+      },
+      "cache.set": {
+        Mean: 2.1,
+        Median: 2,
+        Min: 1,
+        Max: 8,
+        Count: 50,
+        Sum: 105,
+        Variance: 0.5,
+      },
     };
     const parsed = statsSchema.parse(wire);
     expect(Object.keys(parsed)).toEqual(["cache.get", "cache.set"]);
@@ -151,7 +167,10 @@ describe("distMetricsSchema", () => {
   });
 
   it("preserves zero values rather than dropping them", () => {
-    const parsed = distMetricsSchema.parse({ ...distMetricsFixture, ForwardGet: 0 });
+    const parsed = distMetricsSchema.parse({
+      ...distMetricsFixture,
+      ForwardGet: 0,
+    });
     expect(parsed.forwardGet).toBe(0);
   });
 
@@ -160,15 +179,21 @@ describe("distMetricsSchema", () => {
       ...distMetricsFixture,
       LastAutoSyncError: "merkle peer 192.0.2.5:7950 unreachable",
     });
-    expect(parsed.lastAutoSyncError).toBe("merkle peer 192.0.2.5:7950 unreachable");
+    expect(parsed.lastAutoSyncError).toBe(
+      "merkle peer 192.0.2.5:7950 unreachable",
+    );
   });
 
   it("rejects negative counters (catches client/server clock-skew bugs)", () => {
-    expect(() => distMetricsSchema.parse({ ...distMetricsFixture, ForwardGet: -1 })).toThrow();
+    expect(() =>
+      distMetricsSchema.parse({ ...distMetricsFixture, ForwardGet: -1 }),
+    ).toThrow();
   });
 
   it("rejects responses missing fields rather than silently defaulting", () => {
-    const partial = { ...distMetricsFixture } as Partial<typeof distMetricsFixture>;
+    const partial = { ...distMetricsFixture } as Partial<
+      typeof distMetricsFixture
+    >;
     delete partial.HeartbeatSuccess;
     expect(() => distMetricsSchema.parse(partial)).toThrow();
   });

@@ -54,7 +54,10 @@ export function parseCsv(text: string): Record<string, string>[] {
     const row = rows[i]!;
     if (row.length === 1 && row[0] === "") continue; // trailing blank line
     if (row.length !== header.length) {
-      throw new CsvParseError(`expected ${header.length} columns, got ${row.length}`, i + 1);
+      throw new CsvParseError(
+        `expected ${header.length} columns, got ${row.length}`,
+        i + 1,
+      );
     }
     const obj: Record<string, string> = {};
     for (let c = 0; c < header.length; c++) {

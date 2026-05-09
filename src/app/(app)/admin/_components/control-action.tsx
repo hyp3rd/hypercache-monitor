@@ -12,7 +12,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
 import { useState, useTransition, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -86,10 +91,10 @@ export function ControlAction({
     startTransition(async () => {
       let response: Response;
       try {
-        response = await fetch(`/api/clusters/${encodeURIComponent(clusterId)}/mgmt/control/${op}`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-        });
+        response = await fetch(
+          `/api/clusters/${encodeURIComponent(clusterId)}/mgmt/control/${op}`,
+          { method: "POST", headers: { "content-type": "application/json" } },
+        );
       } catch (err) {
         toast.error(`${title} failed: ${(err as Error).message}`);
         setOpen(false);
@@ -113,10 +118,13 @@ export function ControlAction({
   }
 
   const buttonVariant = tone === "danger" ? "destructive" : "default";
-  const cardAccent = tone === "danger" ? "ring-destructive/30" : "ring-amber-500/20";
+  const cardAccent =
+    tone === "danger" ? "ring-destructive/30" : "ring-amber-500/20";
 
   return (
-    <Card className={`border-border/50 bg-card/60 ring-1 ${cardAccent} backdrop-blur`}>
+    <Card
+      className={`border-border/50 bg-card/60 ring-1 ${cardAccent} backdrop-blur`}
+    >
       <CardHeader className="flex-row items-center gap-3 space-y-0">
         <span
           className={`flex h-9 w-9 items-center justify-center rounded-md ring-1 ${
@@ -135,12 +143,21 @@ export function ControlAction({
           <h2 className="text-base font-semibold">{title}</h2>
           <CardDescription className="mt-0.5">{summary}</CardDescription>
         </div>
-        <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialog
+          open={open}
+          onOpenChange={setOpen}
+        >
           <AlertDialogTrigger asChild>
-            <Button variant={buttonVariant} disabled={pending}>
+            <Button
+              variant={buttonVariant}
+              disabled={pending}
+            >
               {pending ? (
                 <>
-                  <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+                  <Loader2
+                    aria-hidden
+                    className="h-4 w-4 animate-spin"
+                  />
                   Running…
                 </>
               ) : (

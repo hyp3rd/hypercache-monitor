@@ -57,7 +57,10 @@ export async function fetchSpecRaw(clusterId: string): Promise<RawSpec> {
   });
 
   if (!response.ok) {
-    throw new SpecFetchError(`spec fetch failed: HTTP ${response.status}`, response.status);
+    throw new SpecFetchError(
+      `spec fetch failed: HTTP ${response.status}`,
+      response.status,
+    );
   }
 
   const text = await response.text();
@@ -140,7 +143,16 @@ export function filterToSafeMethods(spec: RawSpec): RawSpec {
  * "anything not in METADATA_KEYS") to avoid silently treating
  * an unknown future field as a method and dropping it.
  */
-const HTTP_METHOD_KEYS = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
+const HTTP_METHOD_KEYS = new Set([
+  "get",
+  "post",
+  "put",
+  "patch",
+  "delete",
+  "head",
+  "options",
+  "trace",
+]);
 
 function isHttpMethodKey(key: string): boolean {
   return HTTP_METHOD_KEYS.has(key.toLowerCase());

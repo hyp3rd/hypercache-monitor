@@ -41,7 +41,10 @@ describe("ThemeToggle", () => {
   it("renders an interactive toggle with a real icon on the client", () => {
     render(<ThemeToggle />);
     const button = screen.getByRole("button");
-    expect(button).toHaveAttribute("aria-label", expect.stringMatching(/Switch to (light|dark) mode/));
+    expect(button).toHaveAttribute(
+      "aria-label",
+      expect.stringMatching(/Switch to (light|dark) mode/),
+    );
     // Icon SVG is present; client-side render unlocks the
     // real toggle behavior.
     expect(button.querySelector("svg")).not.toBeNull();

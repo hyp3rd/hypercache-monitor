@@ -19,9 +19,7 @@ import { POST } from "./route";
  * client-side via the post-C2 sealed real scopes from /v1/me).
  */
 
-vi.mock("@/lib/auth/session", () => ({
-  activeSession: vi.fn(),
-}));
+vi.mock("@/lib/auth/session", () => ({ activeSession: vi.fn() }));
 
 vi.mock("@/lib/clusters/registry", () => ({
   getCluster: vi.fn(),
@@ -57,13 +55,15 @@ function makeReq(): NextRequest {
   // Sec-Fetch-Site=same-origin satisfies the proxy's CSRF gate
   // — modern browsers set it on every fetch and the proxy
   // trusts it as the authoritative same-origin signal.
-  return new NextRequest(new URL("http://localhost:3000/api/clusters/default/mgmt/control/evict"), {
-    method: "POST",
-    headers: { "sec-fetch-site": "same-origin" },
-  });
+  return new NextRequest(
+    new URL("http://localhost:3000/api/clusters/default/mgmt/control/evict"),
+    { method: "POST", headers: { "sec-fetch-site": "same-origin" } },
+  );
 }
 
-function makeCtx(op: string): { params: Promise<{ clusterId: string; op: string }> } {
+function makeCtx(op: string): {
+  params: Promise<{ clusterId: string; op: string }>;
+} {
   return { params: Promise.resolve({ clusterId: "default", op }) };
 }
 
@@ -105,14 +105,20 @@ describe("POST /api/clusters/[clusterId]/mgmt/control/[op]", () => {
   it("forwards /evict to the mgmt port when the session has admin scope", async () => {
     vi.mocked(activeSession).mockResolvedValueOnce({
       clusterId: "default",
-      session: { token: "tok", identity: "ops", scopes: ["read", "write", "admin"] },
+      session: {
+        token: "tok",
+        identity: "ops",
+        scopes: ["read", "write", "admin"],
+      },
     });
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 202 }));
 
     const res = await POST(makeReq(), makeCtx("evict"));
     expect(res.status).toBe(202);
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("http://cache:8081/evict");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "http://cache:8081/evict",
+    );
     // Bearer token forwarded — operator's identity travels to the cache
     // for any audit attribution the cache wires up later.
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
@@ -129,7 +135,9 @@ describe("POST /api/clusters/[clusterId]/mgmt/control/[op]", () => {
       fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
       const res = await POST(makeReq(), makeCtx(op));
       expect(res.status).toBe(200);
-      expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`http://cache:8081/${op}`);
+      expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(
+        `http://cache:8081/${op}`,
+      );
     }
   });
 

@@ -94,10 +94,7 @@ export type BatchDeleteResponse = z.infer<typeof batchDeleteResponseSchema>;
 
 // ---- Error envelope (proxy-side error responses) ---------------------
 
-const errorEnvelope = z.object({
-  error: z.string(),
-  code: z.string(),
-});
+const errorEnvelope = z.object({ error: z.string(), code: z.string() });
 
 export class BulkApiError extends Error {
   constructor(
@@ -117,16 +114,40 @@ export class BulkApiError extends Error {
  * full response (results + node). Caller is responsible for
  * chunking large key lists — see `src/lib/bulk/chunk.ts`.
  */
-export async function batchGet(clusterId: string, keys: string[]): Promise<BatchGetResponse> {
-  return postJson(clusterId, ["v1", "cache", "batch", "get"], { keys }, batchGetResponseSchema);
+export async function batchGet(
+  clusterId: string,
+  keys: string[],
+): Promise<BatchGetResponse> {
+  return postJson(
+    clusterId,
+    ["v1", "cache", "batch", "get"],
+    { keys },
+    batchGetResponseSchema,
+  );
 }
 
-export async function batchPut(clusterId: string, items: BatchPutItem[]): Promise<BatchPutResponse> {
-  return postJson(clusterId, ["v1", "cache", "batch", "put"], { items }, batchPutResponseSchema);
+export async function batchPut(
+  clusterId: string,
+  items: BatchPutItem[],
+): Promise<BatchPutResponse> {
+  return postJson(
+    clusterId,
+    ["v1", "cache", "batch", "put"],
+    { items },
+    batchPutResponseSchema,
+  );
 }
 
-export async function batchDelete(clusterId: string, keys: string[]): Promise<BatchDeleteResponse> {
-  return postJson(clusterId, ["v1", "cache", "batch", "delete"], { keys }, batchDeleteResponseSchema);
+export async function batchDelete(
+  clusterId: string,
+  keys: string[],
+): Promise<BatchDeleteResponse> {
+  return postJson(
+    clusterId,
+    ["v1", "cache", "batch", "delete"],
+    { keys },
+    batchDeleteResponseSchema,
+  );
 }
 
 async function postJson<T>(
@@ -137,10 +158,7 @@ async function postJson<T>(
 ): Promise<T> {
   const response = await fetch(apiPath(clusterId, ...segments), {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      accept: "application/json",
-    },
+    headers: { "content-type": "application/json", accept: "application/json" },
     credentials: "same-origin",
     cache: "no-store",
     body: JSON.stringify(body),
@@ -157,7 +175,9 @@ async function postJson<T>(
   const json = await response.json();
   const parsed = schema.safeParse(json);
   if (!parsed.success) {
-    throw new Error(`bulk response shape mismatch at ${segments.join("/")}: ${parsed.error.message}`);
+    throw new Error(
+      `bulk response shape mismatch at ${segments.join("/")}: ${parsed.error.message}`,
+    );
   }
   return parsed.data;
 }

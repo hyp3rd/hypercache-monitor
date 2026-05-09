@@ -51,9 +51,12 @@ export default async function AdminPage() {
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">Controls</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
           Cluster-mutating operations on{" "}
-          <span className="text-foreground font-mono font-semibold">{auth.clusterId}</span>. All three forward
-          to the cache&apos;s management HTTP port and require <code>admin</code> scope (the cache enforces it
-          server-side; this surface is hidden when your session lacks the grant).
+          <span className="text-foreground font-mono font-semibold">
+            {auth.clusterId}
+          </span>
+          . All three forward to the cache&apos;s management HTTP port and
+          require <code>admin</code> scope (the cache enforces it server-side;
+          this surface is hidden when your session lacks the grant).
         </p>
       </header>
 
@@ -62,7 +65,12 @@ export default async function AdminPage() {
         op="evict"
         title="Trigger Eviction"
         summary="Run the configured eviction algorithm now instead of waiting for the next scheduled sweep. Reversible — keys evicted by policy are reclaimed by capacity, not deleted by the operator."
-        icon={<FlameKindling aria-hidden className="h-4 w-4" />}
+        icon={
+          <FlameKindling
+            aria-hidden
+            className="h-4 w-4"
+          />
+        }
         tone="warn"
         confirmTitle="Trigger eviction sweep?"
         confirmBody="Runs the eviction algorithm immediately on every node. The sweep evicts keys per the configured policy (LRU / LFU / Clock / etc.); operator-written keys may be reclaimed if they fall below the policy's retention threshold. Returns immediately; the actual sweep is async."
@@ -75,7 +83,12 @@ export default async function AdminPage() {
         op="trigger-expiration"
         title="Trigger Expiration"
         summary="Run the TTL purge now. Removes keys that have already expired but haven't been swept yet. Pure cleanup — keys still within their TTL are untouched."
-        icon={<Eraser aria-hidden className="h-4 w-4" />}
+        icon={
+          <Eraser
+            aria-hidden
+            className="h-4 w-4"
+          />
+        }
         tone="warn"
         confirmTitle="Trigger TTL expiration sweep?"
         confirmBody="Walks every key on every node and removes ones whose TTL has elapsed. Keys still within their configured TTL are left in place. Safe to run at any time; equivalent to advancing the next scheduled expiration tick."
@@ -88,7 +101,12 @@ export default async function AdminPage() {
         op="clear"
         title="Clear cluster"
         summary="Wipe every key from every node. Irreversible — there is no undo, no time-window, no recovery. Use only when the data is safe to lose."
-        icon={<Trash2 aria-hidden className="h-4 w-4" />}
+        icon={
+          <Trash2
+            aria-hidden
+            className="h-4 w-4"
+          />
+        }
         tone="danger"
         confirmTitle="Clear the entire cluster?"
         confirmBody="This deletes every key on every node. Replicas are NOT preserved — the operation fans out to every owner. There is no recovery: no audit trail of removed values, no time-bounded undo. Type the cluster id to confirm if you are unsure."
@@ -108,14 +126,20 @@ function NotAuthorized({ clusterId }: { clusterId: string }) {
         </p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">Controls</h1>
       </header>
-      <div role="alert" className="border-destructive/40 bg-destructive/5 rounded-lg border p-4 text-sm">
+      <div
+        role="alert"
+        className="border-destructive/40 bg-destructive/5 rounded-lg border p-4 text-sm"
+      >
         <p className="text-foreground font-semibold">Insufficient scope</p>
         <p className="text-muted-foreground mt-1 text-xs">
-          The token bound to <span className="text-foreground font-mono">{clusterId}</span> does not carry the{" "}
-          <span className="text-foreground font-mono font-semibold">admin</span> scope. Cluster- mutating
-          operations (evict, trigger-expiration, clear) require an admin-scoped token configured in{" "}
-          <span className="font-mono">HYPERCACHE_AUTH_CONFIG</span>. Ask your cluster operator to issue one,
-          or sign in with a different identity.
+          The token bound to{" "}
+          <span className="text-foreground font-mono">{clusterId}</span> does
+          not carry the{" "}
+          <span className="text-foreground font-mono font-semibold">admin</span>{" "}
+          scope. Cluster- mutating operations (evict, trigger-expiration, clear)
+          require an admin-scoped token configured in{" "}
+          <span className="font-mono">HYPERCACHE_AUTH_CONFIG</span>. Ask your
+          cluster operator to issue one, or sign in with a different identity.
         </p>
       </div>
     </div>

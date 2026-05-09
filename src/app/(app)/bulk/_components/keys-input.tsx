@@ -53,7 +53,10 @@ export function KeysInput({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor="keys-input" className="text-sm font-medium">
+        <label
+          htmlFor="keys-input"
+          className="text-sm font-medium"
+        >
           {label}
         </label>
         <p className="text-muted-foreground font-mono text-xs">
@@ -78,12 +81,23 @@ export function KeysInput({
           className="sr-only"
           aria-label="Upload key list"
         />
-        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-          <Upload aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload
+            aria-hidden
+            className="mr-1.5 h-3.5 w-3.5"
+          />
           Upload .txt
         </Button>
         <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-          <FileText aria-hidden className="h-3 w-3" />
+          <FileText
+            aria-hidden
+            className="h-3 w-3"
+          />
           One key per line · `#` lines ignored
         </span>
       </div>

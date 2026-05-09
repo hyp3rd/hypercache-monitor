@@ -10,7 +10,13 @@ import { cn } from "@/lib/utils";
  * Pure CSS + SVG — scales fluidly, recolors with theme tokens,
  * accessible via `aria-label` on the wrapper.
  */
-export function BrandMark({ className, size = 32 }: { className?: string; size?: number }) {
+export function BrandMark({
+  className,
+  size = 32,
+}: {
+  className?: string;
+  size?: number;
+}) {
   return (
     <span
       role="img"
@@ -35,9 +41,17 @@ export function BrandMark({ className, size = 32 }: { className?: string; size?:
         {/* Outer hash ring (hexagon) */}
         <polygon points="12 2 21 7 21 17 12 22 3 17 3 7" />
         {/* Inner ring */}
-        <polygon points="12 7 17 9.5 17 14.5 12 17 7 14.5 7 9.5" opacity="0.5" />
+        <polygon
+          points="12 7 17 9.5 17 14.5 12 17 7 14.5 7 9.5"
+          opacity="0.5"
+        />
         {/* Primary owner dot */}
-        <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+        <circle
+          cx="12"
+          cy="12"
+          r="1.4"
+          fill="currentColor"
+        />
       </svg>
     </span>
   );

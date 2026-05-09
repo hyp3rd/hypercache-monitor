@@ -58,7 +58,12 @@ describe("filterToSafeMethods", () => {
     };
     const out = filterToSafeMethods(spec);
     const path = (out.paths as Record<string, Record<string, unknown>>)["/x"]!;
-    expect(Object.keys(path).sort()).toEqual(["get", "head", "options", "trace"]);
+    expect(Object.keys(path).sort()).toEqual([
+      "get",
+      "head",
+      "options",
+      "trace",
+    ]);
   });
 
   it("preserves path-level metadata fields (parameters, summary, description, servers)", () => {
@@ -90,7 +95,10 @@ describe("filterToSafeMethods", () => {
       paths: {
         "/read-only": { get: { summary: "ok" } },
         "/write-only": { post: { summary: "create" } },
-        "/write-and-delete": { put: { summary: "replace" }, delete: { summary: "remove" } },
+        "/write-and-delete": {
+          put: { summary: "replace" },
+          delete: { summary: "remove" },
+        },
       },
     };
     const out = filterToSafeMethods(spec);
@@ -103,7 +111,9 @@ describe("filterToSafeMethods", () => {
   it("does not mutate the input (defensive deep clone)", () => {
     const spec = {
       openapi: "3.1.0",
-      paths: { "/x": { get: { summary: "read" }, post: { summary: "create" } } },
+      paths: {
+        "/x": { get: { summary: "read" }, post: { summary: "create" } },
+      },
     };
     const before = JSON.stringify(spec);
     filterToSafeMethods(spec);

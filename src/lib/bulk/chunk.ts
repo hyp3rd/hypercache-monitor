@@ -84,14 +84,21 @@ export async function runChunked<TItem, TResult>(
 ): Promise<ChunkedRunResult<TResult>> {
   const chunkSize = opts.chunkSize ?? DEFAULT_CHUNK_SIZE;
   if (chunkSize < 1 || !Number.isInteger(chunkSize)) {
-    throw new Error(`runChunked: chunkSize must be a positive integer, got ${chunkSize}`);
+    throw new Error(
+      `runChunked: chunkSize must be a positive integer, got ${chunkSize}`,
+    );
   }
 
   const totalChunks = Math.ceil(opts.items.length / chunkSize);
   const results: TResult[] = [];
 
   if (opts.items.length === 0) {
-    opts.onProgress?.({ chunkIndex: 0, totalChunks: 0, itemsProcessed: 0, itemsTotal: 0 });
+    opts.onProgress?.({
+      chunkIndex: 0,
+      totalChunks: 0,
+      itemsProcessed: 0,
+      itemsTotal: 0,
+    });
     return { results, completed: true };
   }
 

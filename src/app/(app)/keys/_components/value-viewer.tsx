@@ -2,7 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { bytesToBlob, decodeBase64, decodeUtf8, toHexDump } from "@/lib/value-decode";
+import {
+  bytesToBlob,
+  decodeBase64,
+  decodeUtf8,
+  toHexDump,
+} from "@/lib/value-decode";
 import { useMemo } from "react";
 import { Download } from "lucide-react";
 
@@ -19,7 +24,13 @@ import { Download } from "lucide-react";
  * Decoding happens once per envelope via useMemo; tab switches
  * are free.
  */
-export function ValueViewer({ keyName, base64Value }: { keyName: string; base64Value: string }) {
+export function ValueViewer({
+  keyName,
+  base64Value,
+}: {
+  keyName: string;
+  base64Value: string;
+}) {
   const decoded = useMemo(() => {
     try {
       return decodeBase64(base64Value);
@@ -31,7 +42,8 @@ export function ValueViewer({ keyName, base64Value }: { keyName: string; base64V
   if (decoded === null) {
     return (
       <p className="bg-destructive/10 text-destructive ring-destructive/20 rounded-md px-3 py-2 text-sm ring-1">
-        Failed to decode base64 payload. Raw value: <code className="font-mono break-all">{base64Value}</code>
+        Failed to decode base64 payload. Raw value:{" "}
+        <code className="font-mono break-all">{base64Value}</code>
       </p>
     );
   }
@@ -66,10 +78,19 @@ export function ValueViewer({ keyName, base64Value }: { keyName: string; base64V
         </TabsList>
         <div className="flex items-center gap-3">
           <span className="text-muted-foreground font-mono text-xs">
-            {decoded.length.toLocaleString()} {decoded.length === 1 ? "byte" : "bytes"}
+            {decoded.length.toLocaleString()}{" "}
+            {decoded.length === 1 ? "byte" : "bytes"}
           </span>
-          <Button variant="ghost" size="sm" className="gap-2" onClick={downloadBlob}>
-            <Download aria-hidden className="h-3.5 w-3.5" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+            onClick={downloadBlob}
+          >
+            <Download
+              aria-hidden
+              className="h-3.5 w-3.5"
+            />
             Download
           </Button>
         </div>
@@ -78,7 +99,9 @@ export function ValueViewer({ keyName, base64Value }: { keyName: string; base64V
       {utf8 !== null && (
         <TabsContent value="text">
           <pre className="bg-muted/30 ring-border/40 mt-3 max-h-96 overflow-auto rounded-md p-3 ring-1">
-            <code className="text-xs break-all whitespace-pre-wrap">{utf8}</code>
+            <code className="text-xs break-all whitespace-pre-wrap">
+              {utf8}
+            </code>
           </pre>
         </TabsContent>
       )}

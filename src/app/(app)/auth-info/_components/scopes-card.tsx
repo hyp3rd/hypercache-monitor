@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { scopeCatalog } from "@/lib/auth/scopes";
 import type { Scope } from "@/lib/auth/session";
 import { ShieldCheck, AlertTriangle } from "lucide-react";
@@ -27,11 +33,16 @@ export function ScopesCard({ granted }: { granted: Scope[] }) {
     <Card className="border-border/50 bg-card/60 backdrop-blur">
       <CardHeader className="flex-row items-center gap-3 space-y-0">
         <span className="bg-brand-muted text-primary ring-primary/30 flex h-9 w-9 items-center justify-center rounded-md ring-1">
-          <ShieldCheck aria-hidden className="h-4 w-4" />
+          <ShieldCheck
+            aria-hidden
+            className="h-4 w-4"
+          />
         </span>
         <div>
           <CardTitle>Granted scopes</CardTitle>
-          <CardDescription>What this session is authorized to do, per the cache server.</CardDescription>
+          <CardDescription>
+            What this session is authorized to do, per the cache server.
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -40,11 +51,17 @@ export function ScopesCard({ granted }: { granted: Scope[] }) {
             role="alert"
             className="bg-destructive/10 text-destructive ring-destructive/20 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm ring-1"
           >
-            <AlertTriangle aria-hidden className="h-3.5 w-3.5" />
+            <AlertTriangle
+              aria-hidden
+              className="h-3.5 w-3.5"
+            />
             No scopes granted — all cache operations will return 403.
           </p>
         ) : (
-          <ul role="list" className="flex flex-wrap gap-2">
+          <ul
+            role="list"
+            className="flex flex-wrap gap-2"
+          >
             {granted.map((scope) => (
               <li key={scope}>
                 <span
@@ -61,7 +78,10 @@ export function ScopesCard({ granted }: { granted: Scope[] }) {
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
             Permissions matrix
           </p>
-          <ul role="list" className="space-y-3">
+          <ul
+            role="list"
+            className="space-y-3"
+          >
             {allScopes.map((scope) => {
               const desc = scopeCatalog[scope];
               const isGranted = grantedSet.has(scope);
@@ -78,7 +98,9 @@ export function ScopesCard({ granted }: { granted: Scope[] }) {
                         >
                           {desc.label}
                         </span>
-                        <span className="text-foreground text-sm">{desc.summary}</span>
+                        <span className="text-foreground text-sm">
+                          {desc.summary}
+                        </span>
                       </div>
                       <ul className="text-muted-foreground mt-2 ml-4 list-disc space-y-0.5 text-xs">
                         {desc.actions.map((a) => (

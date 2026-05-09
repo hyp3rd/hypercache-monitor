@@ -36,7 +36,9 @@ test.describe("topology surface", () => {
 
     // Target the form's error region by id — getByRole("alert")
     // collides with Next's route-announcer.
-    await expect(page.locator("#login-error")).toContainText(/invalid token|UNAUTHORIZED/i);
+    await expect(page.locator("#login-error")).toContainText(
+      /invalid token|UNAUTHORIZED/i,
+    );
     await expect(page).toHaveURL(/\/login/);
   });
 
@@ -62,7 +64,9 @@ test.describe("topology surface", () => {
     }
 
     // 3. Ring viz renders — vnode count from fixture is 6
-    await expect(page.getByRole("img", { name: /Hash ring with 6 vnodes/ })).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: /Hash ring with 6 vnodes/ }),
+    ).toBeVisible();
 
     // 4. Heartbeat success rate renders (12345/12352 ≈ 99.94%)
     await expect(page.getByText(/probe success rate/i)).toBeVisible();

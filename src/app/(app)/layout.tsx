@@ -6,7 +6,15 @@ import { Separator } from "@/components/ui/separator";
 import { activeSession } from "@/lib/auth/session";
 import { listClusters } from "@/lib/clusters/registry";
 import type { ReactNode } from "react";
-import { BarChart3, Database, FileCode2, Layers, Network, ShieldCheck, Wrench } from "lucide-react";
+import {
+  BarChart3,
+  Database,
+  FileCode2,
+  Layers,
+  Network,
+  ShieldCheck,
+  Wrench,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -35,52 +43,122 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex h-16 items-center gap-3 px-5">
           <BrandMark size={32} />
           <div>
-            <h2 className="text-sm leading-none font-semibold tracking-tight">HyperCache</h2>
-            <p className="text-muted-foreground mt-1 text-[11px] tracking-[0.18em] uppercase">Monitor</p>
+            <h2 className="text-sm leading-none font-semibold tracking-tight">
+              HyperCache
+            </h2>
+            <p className="text-muted-foreground mt-1 text-[11px] tracking-[0.18em] uppercase">
+              Monitor
+            </p>
           </div>
         </div>
         <Separator className="bg-border/50" />
-        <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Primary navigation">
+        <nav
+          className="flex flex-1 flex-col gap-0.5 p-3"
+          aria-label="Primary navigation"
+        >
           <NavSection label="Cluster" />
-          <NavLink href="/topology" icon={<Network aria-hidden className="h-4 w-4" />}>
+          <NavLink
+            href="/topology"
+            icon={
+              <Network
+                aria-hidden
+                className="h-4 w-4"
+              />
+            }
+          >
             Topology
           </NavLink>
-          <NavLink href="/keys" icon={<Database aria-hidden className="h-4 w-4" />}>
+          <NavLink
+            href="/keys"
+            icon={
+              <Database
+                aria-hidden
+                className="h-4 w-4"
+              />
+            }
+          >
             Keys
           </NavLink>
-          <NavLink href="/metrics" icon={<BarChart3 aria-hidden className="h-4 w-4" />}>
+          <NavLink
+            href="/metrics"
+            icon={
+              <BarChart3
+                aria-hidden
+                className="h-4 w-4"
+              />
+            }
+          >
             Metrics
           </NavLink>
-          <NavLink href="/bulk" icon={<Layers aria-hidden className="h-4 w-4" />}>
+          <NavLink
+            href="/bulk"
+            icon={
+              <Layers
+                aria-hidden
+                className="h-4 w-4"
+              />
+            }
+          >
             Bulk operations
           </NavLink>
           {hasAdmin && (
             <>
               <div className="mt-2" />
               <NavSection label="Administration" />
-              <NavLink href="/admin" icon={<Wrench aria-hidden className="h-4 w-4" />}>
+              <NavLink
+                href="/admin"
+                icon={
+                  <Wrench
+                    aria-hidden
+                    className="h-4 w-4"
+                  />
+                }
+              >
                 Controls
               </NavLink>
             </>
           )}
           <div className="mt-2" />
           <NavSection label="Reference" />
-          <NavLink href="/auth-info" icon={<ShieldCheck aria-hidden className="h-4 w-4" />}>
+          <NavLink
+            href="/auth-info"
+            icon={
+              <ShieldCheck
+                aria-hidden
+                className="h-4 w-4"
+              />
+            }
+          >
             Auth posture
           </NavLink>
-          <NavLink href="/spec" icon={<FileCode2 aria-hidden className="h-4 w-4" />}>
+          <NavLink
+            href="/spec"
+            icon={
+              <FileCode2
+                aria-hidden
+                className="h-4 w-4"
+              />
+            }
+          >
             API spec
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
           <p className="font-mono">v0.8.0 · Phase C — Eviction Controls</p>
-          <p className="mt-1">Admin-scoped /evict, /clear, /trigger-expiration with confirm dialogs.</p>
+          <p className="mt-1">
+            Admin-scoped /evict, /clear, /trigger-expiration with confirm
+            dialogs.
+          </p>
         </div>
       </aside>
 
       <div className="flex flex-1 flex-col">
         <header className="border-border/60 bg-card/40 flex h-16 items-center justify-between border-b px-6 backdrop-blur">
-          <ClusterPicker clusters={clusters} activeId={auth.clusterId} identity={auth.session.identity} />
+          <ClusterPicker
+            clusters={clusters}
+            activeId={auth.clusterId}
+            identity={auth.session.identity}
+          />
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <LogoutButton />
@@ -93,7 +171,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
          * long pages — the WCAG-prescribed pattern. tabIndex=-1
          * isn't enough; the rule explicitly requires the region
          * to be reachable via Tab. */}
-        <main tabIndex={0} aria-label="Main content" className="flex-1 overflow-auto p-6 lg:p-8">
+        <main
+          tabIndex={0}
+          aria-label="Main content"
+          className="flex-1 overflow-auto p-6 lg:p-8"
+        >
           {children}
         </main>
       </div>

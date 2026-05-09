@@ -13,9 +13,18 @@ import type { ChunkProgress } from "@/lib/bulk/chunk";
  * than "Chunk 4 of 5" — the latter is meaningless without
  * mental-math.
  */
-export function BulkProgress({ progress, running }: { progress: ChunkProgress | null; running: boolean }) {
+export function BulkProgress({
+  progress,
+  running,
+}: {
+  progress: ChunkProgress | null;
+  running: boolean;
+}) {
   if (!running || progress === null || progress.itemsTotal === 0) return null;
-  const pct = Math.min(100, Math.round((progress.itemsProcessed / progress.itemsTotal) * 100));
+  const pct = Math.min(
+    100,
+    Math.round((progress.itemsProcessed / progress.itemsTotal) * 100),
+  );
   return (
     <div
       className="border-border/50 bg-card/50 space-y-2 rounded-md border p-3"
@@ -25,15 +34,30 @@ export function BulkProgress({ progress, running }: { progress: ChunkProgress | 
     >
       <div className="text-muted-foreground flex items-center justify-between text-xs">
         <span>
-          Chunk <span className="text-foreground font-mono">{progress.chunkIndex}</span> of{" "}
-          <span className="text-foreground font-mono">{progress.totalChunks}</span>
+          Chunk{" "}
+          <span className="text-foreground font-mono">
+            {progress.chunkIndex}
+          </span>{" "}
+          of{" "}
+          <span className="text-foreground font-mono">
+            {progress.totalChunks}
+          </span>
         </span>
         <span>
-          <span className="text-foreground font-mono">{progress.itemsProcessed.toLocaleString()}</span> /{" "}
-          <span className="font-mono">{progress.itemsTotal.toLocaleString()}</span> items ({pct}%)
+          <span className="text-foreground font-mono">
+            {progress.itemsProcessed.toLocaleString()}
+          </span>{" "}
+          /{" "}
+          <span className="font-mono">
+            {progress.itemsTotal.toLocaleString()}
+          </span>{" "}
+          items ({pct}%)
         </span>
       </div>
-      <Progress value={pct} aria-hidden />
+      <Progress
+        value={pct}
+        aria-hidden
+      />
     </div>
   );
 }

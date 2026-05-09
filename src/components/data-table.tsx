@@ -2,7 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight } from "lucide-react";
@@ -122,15 +129,33 @@ export function DataTable<TData, TValue>({
                           onClick={header.column.getToggleSortingHandler()}
                           className={cn(
                             "hover:text-foreground inline-flex items-center gap-1.5 text-left text-xs font-medium tracking-wide uppercase transition-colors",
-                            sorted ? "text-foreground" : "text-muted-foreground",
+                            sorted
+                              ? "text-foreground"
+                              : "text-muted-foreground",
                           )}
                         >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {sorted === "asc" && <ArrowUp aria-hidden className="h-3 w-3" />}
-                          {sorted === "desc" && <ArrowDown aria-hidden className="h-3 w-3" />}
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {sorted === "asc" && (
+                            <ArrowUp
+                              aria-hidden
+                              className="h-3 w-3"
+                            />
+                          )}
+                          {sorted === "desc" && (
+                            <ArrowDown
+                              aria-hidden
+                              className="h-3 w-3"
+                            />
+                          )}
                         </button>
                       ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )
                       )}
                     </TableHead>
                   );
@@ -153,7 +178,10 @@ export function DataTable<TData, TValue>({
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -166,9 +194,18 @@ export function DataTable<TData, TValue>({
         <div className="text-muted-foreground flex items-center justify-between gap-3 text-xs">
           <p>
             Page{" "}
-            <span className="text-foreground font-mono">{table.getState().pagination.pageIndex + 1}</span> of{" "}
-            <span className="text-foreground font-mono">{table.getPageCount()}</span> ·{" "}
-            <span className="text-foreground font-mono">{table.getFilteredRowModel().rows.length}</span> rows
+            <span className="text-foreground font-mono">
+              {table.getState().pagination.pageIndex + 1}
+            </span>{" "}
+            of{" "}
+            <span className="text-foreground font-mono">
+              {table.getPageCount()}
+            </span>{" "}
+            ·{" "}
+            <span className="text-foreground font-mono">
+              {table.getFilteredRowModel().rows.length}
+            </span>{" "}
+            rows
           </p>
           <div className="flex gap-1.5">
             <Button
@@ -178,7 +215,10 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanPreviousPage()}
               aria-label="Previous page"
             >
-              <ChevronLeft aria-hidden className="h-3.5 w-3.5" />
+              <ChevronLeft
+                aria-hidden
+                className="h-3.5 w-3.5"
+              />
             </Button>
             <Button
               variant="outline"
@@ -187,7 +227,10 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanNextPage()}
               aria-label="Next page"
             >
-              <ChevronRight aria-hidden className="h-3.5 w-3.5" />
+              <ChevronRight
+                aria-hidden
+                className="h-3.5 w-3.5"
+              />
             </Button>
           </div>
         </div>

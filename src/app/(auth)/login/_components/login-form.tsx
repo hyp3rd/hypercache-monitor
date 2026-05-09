@@ -1,10 +1,22 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { ClusterListItem } from "@/lib/clusters/types";
 import { useState, useTransition } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
@@ -35,9 +47,9 @@ export function LoginForm({
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [selectedClusterId, setSelectedClusterId] = useState<string | undefined>(
-    preselectedClusterId ?? clusters[0]?.id,
-  );
+  const [selectedClusterId, setSelectedClusterId] = useState<
+    string | undefined
+  >(preselectedClusterId ?? clusters[0]?.id);
 
   const showClusterPicker = clusters.length > 1;
 
@@ -50,7 +62,9 @@ export function LoginForm({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(
-          selectedClusterId !== undefined ? { token, clusterId: selectedClusterId } : { token },
+          selectedClusterId !== undefined
+            ? { token, clusterId: selectedClusterId }
+            : { token },
         ),
       });
 
@@ -58,7 +72,9 @@ export function LoginForm({
       setToken("");
 
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        const body = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
         setError(body.error ?? `Sign-in failed (${response.status})`);
         return;
       }
@@ -72,12 +88,19 @@ export function LoginForm({
     <Card className="border-border/50 bg-card/60 shadow-2xl shadow-violet-500/5 backdrop-blur">
       <CardHeader>
         <CardTitle className="flex items-center gap-2.5 text-base">
-          <KeyRound aria-hidden className="text-primary h-4 w-4" />
+          <KeyRound
+            aria-hidden
+            className="text-primary h-4 w-4"
+          />
           Sign in with bearer token
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form id="login-form" onSubmit={onSubmit} className="space-y-4">
+        <form
+          id="login-form"
+          onSubmit={onSubmit}
+          className="space-y-4"
+        >
           {showClusterPicker && (
             <div className="space-y-2">
               <Label
@@ -91,14 +114,23 @@ export function LoginForm({
                 onValueChange={(v) => setSelectedClusterId(v)}
                 disabled={pending}
               >
-                <SelectTrigger id="cluster" className="w-full" aria-label="Cluster">
+                <SelectTrigger
+                  id="cluster"
+                  className="w-full"
+                  aria-label="Cluster"
+                >
                   <SelectValue placeholder="Select a cluster" />
                 </SelectTrigger>
                 <SelectContent>
                   {clusters.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
+                    <SelectItem
+                      key={c.id}
+                      value={c.id}
+                    >
                       <span className="font-medium">{c.name}</span>
-                      <span className="text-muted-foreground ml-2 font-mono text-xs">{c.id}</span>
+                      <span className="text-muted-foreground ml-2 font-mono text-xs">
+                        {c.id}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -147,7 +179,10 @@ export function LoginForm({
         >
           {pending ? (
             <>
-              <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+              <Loader2
+                aria-hidden
+                className="h-4 w-4 animate-spin"
+              />
               Verifying…
             </>
           ) : (

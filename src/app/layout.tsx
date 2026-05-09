@@ -40,11 +40,9 @@ const mono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "HyperCache Monitor",
-    template: "%s · HyperCache Monitor",
-  },
-  description: "Operator control panel for HyperCache distributed cache clusters.",
+  title: { default: "HyperCache Monitor", template: "%s · HyperCache Monitor" },
+  description:
+    "Operator control panel for HyperCache distributed cache clusters.",
 };
 
 export const viewport: Viewport = {
@@ -56,11 +54,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn(sans.variable, slab.variable, mono.variable)}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn(sans.variable, slab.variable, mono.variable)}
+    >
       <body className="bg-background min-h-screen font-sans antialiased">
         <ThemeProvider>
           <QueryProvider>

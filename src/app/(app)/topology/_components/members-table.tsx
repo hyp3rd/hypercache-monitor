@@ -1,6 +1,13 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { ClusterMembers, MemberState } from "@/lib/api/mgmt";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +19,10 @@ import { cn } from "@/lib/utils";
  * conspicuous by color difference rather than visual noise.
  */
 
-const stateStyles: Record<MemberState, { label: string; dot: string; ring: string; text: string }> = {
+const stateStyles: Record<
+  MemberState,
+  { label: string; dot: string; ring: string; text: string }
+> = {
   alive: {
     label: "Alive",
     dot: "bg-emerald-500 alive-glow",
@@ -53,10 +63,14 @@ export function MembersTable({ data }: { data: ClusterMembers }) {
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-1.5 text-xs">
           <span className="text-muted-foreground">Replication factor</span>
-          <span className="text-foreground font-mono font-semibold">{data.replication}</span>
+          <span className="text-foreground font-mono font-semibold">
+            {data.replication}
+          </span>
           <span className="text-muted-foreground/40">·</span>
           <span className="text-muted-foreground">vnodes / node</span>
-          <span className="text-foreground font-mono font-semibold">{data.virtualNodes}</span>
+          <span className="text-foreground font-mono font-semibold">
+            {data.virtualNodes}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {(Object.entries(counts) as Array<[MemberState, number]>)
@@ -70,9 +84,17 @@ export function MembersTable({ data }: { data: ClusterMembers }) {
                   stateStyles[state].text,
                 )}
               >
-                <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", stateStyles[state].dot)} />
+                <span
+                  aria-hidden
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    stateStyles[state].dot,
+                  )}
+                />
                 <span className="font-mono tabular-nums">{n}</span>
-                <span className="text-foreground/60">{stateStyles[state].label.toLowerCase()}</span>
+                <span className="text-foreground/60">
+                  {stateStyles[state].label.toLowerCase()}
+                </span>
               </span>
             ))}
         </div>
@@ -92,16 +114,31 @@ export function MembersTable({ data }: { data: ClusterMembers }) {
             {data.members.map((m) => {
               const style = stateStyles[m.state];
               return (
-                <TableRow key={m.id} className="border-border/40 hover:bg-accent/40">
+                <TableRow
+                  key={m.id}
+                  className="border-border/40 hover:bg-accent/40"
+                >
                   <TableCell className="text-center">
-                    <span aria-hidden className={cn("inline-block h-2.5 w-2.5 rounded-full", style.dot)} />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "inline-block h-2.5 w-2.5 rounded-full",
+                        style.dot,
+                      )}
+                    />
                   </TableCell>
                   <TableCell>
-                    <div className="text-foreground font-mono text-xs font-semibold">{m.id}</div>
+                    <div className="text-foreground font-mono text-xs font-semibold">
+                      {m.id}
+                    </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-xs">{m.address}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs">
+                    {m.address}
+                  </TableCell>
                   <TableCell>
-                    <span className={cn("text-xs font-medium", style.text)}>{style.label}</span>
+                    <span className={cn("text-xs font-medium", style.text)}>
+                      {style.label}
+                    </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-right font-mono text-xs tabular-nums">
                     {m.incarnation.toLocaleString()}

@@ -29,9 +29,7 @@ const config: NextConfig = {
   // silent. Keep typed-build behavior — typecheck failures fail the
   // build. (Next 16 removed the legacy `eslint.ignoreDuringBuilds`
   // option; lint runs as a separate `npm run lint` step in `make ci`.)
-  typescript: {
-    ignoreBuildErrors: false,
-  },
+  typescript: { ignoreBuildErrors: false },
 };
 
 export default config;

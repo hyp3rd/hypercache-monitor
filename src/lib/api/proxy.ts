@@ -53,7 +53,10 @@ const HOP_BY_HOP_HEADERS = new Set([
   "host",
 ]);
 
-export async function proxyToCache(req: NextRequest, opts: ProxyOptions): Promise<Response> {
+export async function proxyToCache(
+  req: NextRequest,
+  opts: ProxyOptions,
+): Promise<Response> {
   const requestId = req.headers.get("x-request-id") ?? randomUUID();
 
   // 1. Auth — require a valid session for every proxy hit, even
@@ -61,7 +64,12 @@ export async function proxyToCache(req: NextRequest, opts: ProxyOptions): Promis
   //    accepts anonymously. The proxy is the trust boundary.
   const auth = await activeSession();
   if (!auth) {
-    return jsonError(401, "UNAUTHORIZED", "no active cluster session", requestId);
+    return jsonError(
+      401,
+      "UNAUTHORIZED",
+      "no active cluster session",
+      requestId,
+    );
   }
 
   // 2. Scope enforcement. Used today for admin gating on
@@ -69,7 +77,12 @@ export async function proxyToCache(req: NextRequest, opts: ProxyOptions): Promis
   //    doesn't enforce these scopes itself in this version,
   //    so the proxy is the only line of defense.
   if (opts.requiredScope && !auth.session.scopes.includes(opts.requiredScope)) {
-    return jsonError(403, "FORBIDDEN", `requires scope: ${opts.requiredScope}`, requestId);
+    return jsonError(
+      403,
+      "FORBIDDEN",
+      `requires scope: ${opts.requiredScope}`,
+      requestId,
+    );
   }
 
   // 3. CSRF — defense in depth over SameSite=Strict cookies.
@@ -119,9 +132,15 @@ export async function proxyToCache(req: NextRequest, opts: ProxyOptions): Promis
   // 4. Resolve the target base URL.
   const cluster = getCluster(auth.clusterId);
   if (!cluster) {
-    return jsonError(500, "CLUSTER_GONE", "active cluster not in registry", requestId);
+    return jsonError(
+      500,
+      "CLUSTER_GONE",
+      "active cluster not in registry",
+      requestId,
+    );
   }
-  const baseUrl = opts.target === "api" ? cluster.apiBaseUrl : cluster.mgmtBaseUrl;
+  const baseUrl =
+    opts.target === "api" ? cluster.apiBaseUrl : cluster.mgmtBaseUrl;
   const upstreamUrl = new URL(opts.path, baseUrl);
   // Carry through any query string the route handler passed us.
   for (const [k, v] of req.nextUrl.searchParams.entries()) {
@@ -138,7 +157,10 @@ export async function proxyToCache(req: NextRequest, opts: ProxyOptions): Promis
   fwdHeaders.set("x-request-id", requestId);
 
   // 6. Forward the body untouched. GET/HEAD have no body.
-  const body = req.method === "GET" || req.method === "HEAD" ? undefined : await req.arrayBuffer();
+  const body =
+    req.method === "GET" || req.method === "HEAD"
+      ? undefined
+      : await req.arrayBuffer();
 
   let upstream: Response;
   try {
@@ -155,7 +177,12 @@ export async function proxyToCache(req: NextRequest, opts: ProxyOptions): Promis
       cache: "no-store",
     });
   } catch (err) {
-    return jsonError(502, "UPSTREAM_FAILURE", `upstream fetch failed: ${(err as Error).message}`, requestId);
+    return jsonError(
+      502,
+      "UPSTREAM_FAILURE",
+      `upstream fetch failed: ${(err as Error).message}`,
+      requestId,
+    );
   }
 
   // 7. Pass-through response. Strip hop-by-hop on the way back too,
@@ -176,12 +203,14 @@ export async function proxyToCache(req: NextRequest, opts: ProxyOptions): Promis
   });
 }
 
-function jsonError(status: number, code: string, message: string, requestId: string): Response {
+function jsonError(
+  status: number,
+  code: string,
+  message: string,
+  requestId: string,
+): Response {
   return NextResponse.json(
     { error: message, code },
-    {
-      status,
-      headers: { "x-request-id": requestId },
-    },
+    { status, headers: { "x-request-id": requestId } },
   );
 }

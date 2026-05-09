@@ -18,7 +18,9 @@ const schema = z.object({
 const parsed = schema.safeParse({});
 
 if (!parsed.success) {
-  const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
+  const issues = parsed.error.issues
+    .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+    .join("\n");
   throw new Error(`Invalid client environment:\n${issues}`);
 }
 

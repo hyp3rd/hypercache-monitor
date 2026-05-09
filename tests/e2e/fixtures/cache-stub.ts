@@ -1,5 +1,9 @@
 import type { Server } from "node:http";
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 
 /**
  * Tiny stand-in for a HyperCache cluster. Used by Playwright's
@@ -67,7 +71,9 @@ interface StubOptions {
   identity: string;
 }
 
-export async function startCacheStub(opts?: Partial<StubOptions>): Promise<StubHandle> {
+export async function startCacheStub(
+  opts?: Partial<StubOptions>,
+): Promise<StubHandle> {
   const resolved: StubOptions = {
     apiPort: opts?.apiPort ?? STUB_API_PORT,
     mgmtPort: opts?.mgmtPort ?? STUB_MGMT_PORT,
@@ -83,7 +89,10 @@ export async function startCacheStub(opts?: Partial<StubOptions>): Promise<StubH
   const apiServer = createServer(handler);
   const mgmtServer = createServer(handler);
 
-  await Promise.all([listen(apiServer, resolved.apiPort), listen(mgmtServer, resolved.mgmtPort)]);
+  await Promise.all([
+    listen(apiServer, resolved.apiPort),
+    listen(mgmtServer, resolved.mgmtPort),
+  ]);
 
   return {
     apiUrl: resolved.apiUrl,
@@ -107,13 +116,19 @@ const keyStore = new Map<string, { bytes: Buffer; ttlMs?: number }>();
 // any timing tricks in the E2E itself.
 let distMetricsCalls = 0;
 
-function makeHandle(identity: string): (req: IncomingMessage, res: ServerResponse) => void {
+function makeHandle(
+  identity: string,
+): (req: IncomingMessage, res: ServerResponse) => void {
   return (req, res) => {
     handle(req, res, identity);
   };
 }
 
-function handle(req: IncomingMessage, res: ServerResponse, identity: string): void {
+function handle(
+  req: IncomingMessage,
+  res: ServerResponse,
+  identity: string,
+): void {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const auth = req.headers["authorization"];
   const requireAuth = url.pathname !== "/v1/openapi.yaml";
@@ -161,7 +176,13 @@ function handle(req: IncomingMessage, res: ServerResponse, identity: string): vo
   if (ownersMatch) {
     const key = decodeURIComponent(ownersMatch[1] ?? "");
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ key, owners: ["node-1", "node-2", "node-3"], node: "node-1" }));
+    res.end(
+      JSON.stringify({
+        key,
+        owners: ["node-1", "node-2", "node-3"],
+        node: "node-1",
+      }),
+    );
     return;
   }
 
@@ -172,7 +193,9 @@ function handle(req: IncomingMessage, res: ServerResponse, identity: string): vo
   // presented a valid token and the cache renders its identity.
   if (url.pathname === "/v1/me" && req.method === "GET") {
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ id: identity, scopes: ["read", "write", "admin"] }));
+    res.end(
+      JSON.stringify({ id: identity, scopes: ["read", "write", "admin"] }),
+    );
     return;
   }
 
@@ -212,7 +235,12 @@ function handle(req: IncomingMessage, res: ServerResponse, identity: string): vo
  * Single-key endpoint handler — supports GET (envelope only,
  * the Accept: application/json path), HEAD, PUT, DELETE.
  */
-function handleCacheKey(req: IncomingMessage, res: ServerResponse, key: string, url: URL): void {
+function handleCacheKey(
+  req: IncomingMessage,
+  res: ServerResponse,
+  key: string,
+  url: URL,
+): void {
   switch (req.method) {
     case "GET": {
       const entry = keyStore.get(key);
@@ -246,7 +274,8 @@ function handleCacheKey(req: IncomingMessage, res: ServerResponse, key: string, 
         "x-cache-owners": "node-1,node-2,node-3",
         "x-cache-node": "node-1",
       };
-      if (entry.ttlMs !== undefined) headers["x-cache-ttl-ms"] = String(entry.ttlMs);
+      if (entry.ttlMs !== undefined)
+        headers["x-cache-ttl-ms"] = String(entry.ttlMs);
       res.writeHead(200, headers);
       res.end();
       return;
@@ -255,7 +284,10 @@ function handleCacheKey(req: IncomingMessage, res: ServerResponse, key: string, 
       const ttl = url.searchParams.get("ttl");
       const ttlMs = ttl !== null ? parseGoDurationMs(ttl) : undefined;
       collectBody(req).then((body) => {
-        keyStore.set(key, ttlMs !== undefined ? { bytes: body, ttlMs } : { bytes: body });
+        keyStore.set(
+          key,
+          ttlMs !== undefined ? { bytes: body, ttlMs } : { bytes: body },
+        );
         res.writeHead(200, { "content-type": "application/json" });
         res.end(
           JSON.stringify({
@@ -285,7 +317,12 @@ function handleCacheKey(req: IncomingMessage, res: ServerResponse, key: string, 
     }
     default:
       res.writeHead(405, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "method not allowed", code: "METHOD_NOT_ALLOWED" }));
+      res.end(
+        JSON.stringify({
+          error: "method not allowed",
+          code: "METHOD_NOT_ALLOWED",
+        }),
+      );
   }
 }
 
@@ -304,7 +341,12 @@ function handleBatchGet(req: IncomingMessage, res: ServerResponse): void {
       const parsed = parseJson(body) as { keys?: string[] } | null;
       if (parsed === null || !Array.isArray(parsed.keys)) {
         res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: "invalid JSON: keys[] required", code: "BAD_REQUEST" }));
+        res.end(
+          JSON.stringify({
+            error: "invalid JSON: keys[] required",
+            code: "BAD_REQUEST",
+          }),
+        );
         return;
       }
       const results = parsed.keys.map((key) => {
@@ -334,16 +376,31 @@ function handleBatchPut(req: IncomingMessage, res: ServerResponse): void {
   collectBody(req)
     .then((body) => {
       const parsed = parseJson(body) as {
-        items?: Array<{ key?: string; value?: string; value_encoding?: string; ttl_ms?: number }>;
+        items?: Array<{
+          key?: string;
+          value?: string;
+          value_encoding?: string;
+          ttl_ms?: number;
+        }>;
       } | null;
       if (parsed === null || !Array.isArray(parsed.items)) {
         res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: "invalid JSON: items[] required", code: "BAD_REQUEST" }));
+        res.end(
+          JSON.stringify({
+            error: "invalid JSON: items[] required",
+            code: "BAD_REQUEST",
+          }),
+        );
         return;
       }
       const results = parsed.items.map((item) => {
         if (!item.key || item.key === "") {
-          return { key: item.key ?? "", stored: false, error: "missing key", code: "BAD_REQUEST" };
+          return {
+            key: item.key ?? "",
+            stored: false,
+            error: "missing key",
+            code: "BAD_REQUEST",
+          };
         }
         const valueStr = item.value ?? "";
         let bytes: Buffer;
@@ -351,13 +408,26 @@ function handleBatchPut(req: IncomingMessage, res: ServerResponse): void {
           try {
             bytes = Buffer.from(valueStr, "base64");
           } catch {
-            return { key: item.key, stored: false, error: "invalid base64", code: "BAD_REQUEST" };
+            return {
+              key: item.key,
+              stored: false,
+              error: "invalid base64",
+              code: "BAD_REQUEST",
+            };
           }
         } else {
           bytes = Buffer.from(valueStr, "utf-8");
         }
-        keyStore.set(item.key, item.ttl_ms !== undefined ? { bytes, ttlMs: item.ttl_ms } : { bytes });
-        return { key: item.key, stored: true, bytes: bytes.length, owners: ["node-1", "node-2", "node-3"] };
+        keyStore.set(
+          item.key,
+          item.ttl_ms !== undefined ? { bytes, ttlMs: item.ttl_ms } : { bytes },
+        );
+        return {
+          key: item.key,
+          stored: true,
+          bytes: bytes.length,
+          owners: ["node-1", "node-2", "node-3"],
+        };
       });
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ results, node: "node-1" }));
@@ -374,12 +444,22 @@ function handleBatchDelete(req: IncomingMessage, res: ServerResponse): void {
       const parsed = parseJson(body) as { keys?: string[] } | null;
       if (parsed === null || !Array.isArray(parsed.keys)) {
         res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: "invalid JSON: keys[] required", code: "BAD_REQUEST" }));
+        res.end(
+          JSON.stringify({
+            error: "invalid JSON: keys[] required",
+            code: "BAD_REQUEST",
+          }),
+        );
         return;
       }
       const results = parsed.keys.map((key) => {
         if (key === "") {
-          return { key, deleted: false, error: "missing key", code: "BAD_REQUEST" };
+          return {
+            key,
+            deleted: false,
+            error: "missing key",
+            code: "BAD_REQUEST",
+          };
         }
         keyStore.delete(key);
         return { key, deleted: true, owners: ["node-1", "node-2", "node-3"] };
@@ -516,11 +596,36 @@ const FIXTURES: Record<string, { contentType: string; body: string }> = {
       replication: 3,
       virtualNodes: 64,
       members: [
-        { ID: "node-1", Address: "hypercache-1:7946", State: "alive", Incarnation: 723 },
-        { ID: "node-2", Address: "hypercache-2:7946", State: "alive", Incarnation: 723 },
-        { ID: "node-3", Address: "hypercache-3:7946", State: "alive", Incarnation: 723 },
-        { ID: "node-4", Address: "hypercache-4:7946", State: "alive", Incarnation: 723 },
-        { ID: "node-5", Address: "hypercache-5:7946", State: "alive", Incarnation: 1 },
+        {
+          ID: "node-1",
+          Address: "hypercache-1:7946",
+          State: "alive",
+          Incarnation: 723,
+        },
+        {
+          ID: "node-2",
+          Address: "hypercache-2:7946",
+          State: "alive",
+          Incarnation: 723,
+        },
+        {
+          ID: "node-3",
+          Address: "hypercache-3:7946",
+          State: "alive",
+          Incarnation: 723,
+        },
+        {
+          ID: "node-4",
+          Address: "hypercache-4:7946",
+          State: "alive",
+          Incarnation: 723,
+        },
+        {
+          ID: "node-5",
+          Address: "hypercache-5:7946",
+          State: "alive",
+          Incarnation: 1,
+        },
       ],
     }),
   },
@@ -528,7 +633,14 @@ const FIXTURES: Record<string, { contentType: string; body: string }> = {
     contentType: "application/json",
     body: JSON.stringify({
       count: 6,
-      vnodes: ["aaa:node-1", "bbb:node-2", "ccc:node-3", "ddd:node-4", "eee:node-5", "fff:node-1"],
+      vnodes: [
+        "aaa:node-1",
+        "bbb:node-2",
+        "ccc:node-3",
+        "ddd:node-4",
+        "eee:node-5",
+        "fff:node-1",
+      ],
     }),
   },
   "/cluster/heartbeat": {
@@ -556,8 +668,24 @@ const FIXTURES: Record<string, { contentType: string; body: string }> = {
   "/stats": {
     contentType: "application/json",
     body: JSON.stringify({
-      "cache.get": { Mean: 1.42, Median: 1, Min: 0, Max: 12, Count: 4_521, Sum: 6_419, Variance: 0.85 },
-      "cache.set": { Mean: 2.05, Median: 2, Min: 1, Max: 18, Count: 1_207, Sum: 2_474, Variance: 1.21 },
+      "cache.get": {
+        Mean: 1.42,
+        Median: 1,
+        Min: 0,
+        Max: 12,
+        Count: 4_521,
+        Sum: 6_419,
+        Variance: 0.85,
+      },
+      "cache.set": {
+        Mean: 2.05,
+        Median: 2,
+        Min: 1,
+        Max: 18,
+        Count: 1_207,
+        Sum: 2_474,
+        Variance: 1.21,
+      },
     }),
   },
 };
