@@ -36,14 +36,20 @@ export default async function KeysPage({ searchParams }: KeysPageProps) {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-muted-foreground text-[11px] font-medium tracking-[0.18em] uppercase">Cache</p>
+        <p className="text-muted-foreground text-[11px] font-medium tracking-[0.18em] uppercase">
+          Cache
+        </p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">Keys</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
-          Inspect, edit, or delete a single cache key. Use the search box to load a key by name; values render
-          with a decode toggle so binary payloads stay readable.
+          Inspect, edit, or delete a single cache key. Use the search box to
+          load a key by name; values render with a decode toggle so binary
+          payloads stay readable.
         </p>
       </header>
-      <KeysClient clusterId={auth.clusterId} initialKey={initialKey ?? null} />
+      <KeysClient
+        clusterId={auth.clusterId}
+        initialKey={initialKey ?? null}
+      />
     </div>
   );
 }

@@ -17,13 +17,9 @@ import { POST } from "./route";
  * exposing the bits the route actually touches.
  */
 
-vi.mock("@/lib/auth/session", () => ({
-  getSession: vi.fn(),
-}));
+vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
-vi.mock("@/lib/clusters/registry", () => ({
-  getCluster: vi.fn(),
-}));
+vi.mock("@/lib/clusters/registry", () => ({ getCluster: vi.fn() }));
 
 const { getSession } = await import("@/lib/auth/session");
 const { getCluster } = await import("@/lib/clusters/registry");
@@ -37,7 +33,10 @@ const fakeCluster = {
 
 interface FakeSession {
   activeClusterId?: string;
-  sessions?: Record<string, { token: string; identity: string; scopes: ("read" | "write" | "admin")[] }>;
+  sessions?: Record<
+    string,
+    { token: string; identity: string; scopes: ("read" | "write" | "admin")[] }
+  >;
   save: ReturnType<typeof vi.fn>;
 }
 
@@ -50,11 +49,14 @@ function makeSession(initial: Partial<FakeSession> = {}): FakeSession {
 }
 
 function makeReq(body: unknown): NextRequest {
-  return new NextRequest(new URL("http://localhost:3000/api/auth/switch-cluster"), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: typeof body === "string" ? body : JSON.stringify(body),
-  });
+  return new NextRequest(
+    new URL("http://localhost:3000/api/auth/switch-cluster"),
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: typeof body === "string" ? body : JSON.stringify(body),
+    },
+  );
 }
 
 beforeEach(() => {
@@ -114,7 +116,9 @@ describe("POST /api/auth/switch-cluster", () => {
   it("returns 401 NEED_LOGIN when cluster exists but session has no entry", async () => {
     const session = makeSession({
       activeClusterId: "default",
-      sessions: { default: { token: "t1", identity: "default", scopes: ["read"] } },
+      sessions: {
+        default: { token: "t1", identity: "default", scopes: ["read"] },
+      },
     });
     vi.mocked(getSession).mockResolvedValueOnce(session as never);
     vi.mocked(getCluster).mockReturnValueOnce(fakeCluster);

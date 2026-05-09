@@ -48,7 +48,9 @@ export function RingSvg({ data }: { data: ClusterRing }) {
   }, [data.vnodes]);
 
   if (data.vnodes.length === 0) {
-    return <p className="text-muted-foreground text-sm">No vnodes registered.</p>;
+    return (
+      <p className="text-muted-foreground text-sm">No vnodes registered.</p>
+    );
   }
 
   // Layout: ring with vnodes at evenly-spaced angles. The order
@@ -61,7 +63,10 @@ export function RingSvg({ data }: { data: ClusterRing }) {
 
   return (
     <div className="space-y-5">
-      <div className="relative mx-auto" style={{ width: size, height: size }}>
+      <div
+        className="relative mx-auto"
+        style={{ width: size, height: size }}
+      >
         <svg
           width={size}
           height={size}
@@ -72,9 +77,23 @@ export function RingSvg({ data }: { data: ClusterRing }) {
         >
           <defs>
             {Object.entries(colors).map(([id, color]) => (
-              <radialGradient key={id} id={`vnode-${id}`} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor={color} stopOpacity="1" />
-                <stop offset="100%" stopColor={color} stopOpacity="0.6" />
+              <radialGradient
+                key={id}
+                id={`vnode-${id}`}
+                cx="50%"
+                cy="50%"
+                r="50%"
+              >
+                <stop
+                  offset="0%"
+                  stopColor={color}
+                  stopOpacity="1"
+                />
+                <stop
+                  offset="100%"
+                  stopColor={color}
+                  stopOpacity="0.6"
+                />
               </radialGradient>
             ))}
           </defs>
@@ -136,7 +155,13 @@ export function RingSvg({ data }: { data: ClusterRing }) {
             return (
               <g key={`${v.hash}-${i}`}>
                 {/* Glow layer */}
-                <circle cx={x} cy={y} r={6} fill={color} opacity={0.25} />
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={6}
+                  fill={color}
+                  opacity={0.25}
+                />
                 {/* Main vnode dot */}
                 <circle
                   cx={x}
@@ -156,7 +181,11 @@ export function RingSvg({ data }: { data: ClusterRing }) {
             y={center - 4}
             textAnchor="middle"
             className="fill-foreground font-mono"
-            style={{ fontSize: "32px", fontWeight: 600, letterSpacing: "-0.02em" }}
+            style={{
+              fontSize: "32px",
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+            }}
           >
             {data.count}
           </text>
@@ -165,13 +194,20 @@ export function RingSvg({ data }: { data: ClusterRing }) {
             y={center + 18}
             textAnchor="middle"
             className="fill-muted-foreground"
-            style={{ fontSize: "11px", letterSpacing: "0.18em", textTransform: "uppercase" }}
+            style={{
+              fontSize: "11px",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+            }}
           >
             vnodes
           </text>
         </svg>
       </div>
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs" aria-label="Ring legend">
+      <ul
+        className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs"
+        aria-label="Ring legend"
+      >
         {Object.entries(colors).map(([id, color]) => {
           const owned = data.vnodes.filter((v) => v.ownerId === id).length;
           const pct = ((owned / data.vnodes.length) * 100).toFixed(1);
@@ -181,11 +217,16 @@ export function RingSvg({ data }: { data: ClusterRing }) {
               className="bg-muted/30 flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5"
             >
               <span className="flex items-center gap-2">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                <span
+                  aria-hidden
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: color }}
+                />
                 <span className="font-mono font-medium">{id}</span>
               </span>
               <span className="text-muted-foreground font-mono tabular-nums">
-                {owned} <span className="text-muted-foreground/60">/ {pct}%</span>
+                {owned}{" "}
+                <span className="text-muted-foreground/60">/ {pct}%</span>
               </span>
             </li>
           );

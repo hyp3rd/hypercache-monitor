@@ -11,11 +11,7 @@ describe("runChunked", () => {
   it("returns immediately for empty input with a 0/0 progress tick", async () => {
     const onProgress = vi.fn();
     const fetcher = vi.fn();
-    const out = await runChunked({
-      items: [],
-      fetcher,
-      onProgress,
-    });
+    const out = await runChunked({ items: [], fetcher, onProgress });
     expect(out.results).toEqual([]);
     expect(out.completed).toBe(true);
     expect(fetcher).not.toHaveBeenCalled();
@@ -107,12 +103,12 @@ describe("runChunked", () => {
   });
 
   it("rejects non-integer / non-positive chunk sizes loud", async () => {
-    await expect(runChunked({ items: [1], chunkSize: 0, fetcher: async () => [] })).rejects.toThrow(
-      /chunkSize must be a positive integer/,
-    );
-    await expect(runChunked({ items: [1], chunkSize: 2.5, fetcher: async () => [] })).rejects.toThrow(
-      /chunkSize must be a positive integer/,
-    );
+    await expect(
+      runChunked({ items: [1], chunkSize: 0, fetcher: async () => [] }),
+    ).rejects.toThrow(/chunkSize must be a positive integer/);
+    await expect(
+      runChunked({ items: [1], chunkSize: 2.5, fetcher: async () => [] }),
+    ).rejects.toThrow(/chunkSize must be a positive integer/);
   });
 
   it("uses the documented default chunk size of 1000", async () => {

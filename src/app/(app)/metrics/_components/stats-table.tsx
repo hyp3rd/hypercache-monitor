@@ -1,7 +1,20 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Stats } from "@/lib/api/metrics";
 import { LineChart } from "lucide-react";
 
@@ -17,11 +30,16 @@ export function StatsTable({ stats }: { stats: Stats | undefined }) {
     <Card className="border-border/50 bg-card/60 backdrop-blur">
       <CardHeader className="flex-row items-center gap-3 space-y-0">
         <span className="bg-brand-muted text-primary ring-primary/30 flex h-9 w-9 items-center justify-center rounded-md ring-1">
-          <LineChart aria-hidden className="h-4 w-4" />
+          <LineChart
+            aria-hidden
+            className="h-4 w-4"
+          />
         </span>
         <div>
           <CardTitle>Per-name stats</CardTitle>
-          <CardDescription>Statistical summaries from registered StatsCollectors.</CardDescription>
+          <CardDescription>
+            Statistical summaries from registered StatsCollectors.
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent>
@@ -29,8 +47,8 @@ export function StatsTable({ stats }: { stats: Stats | undefined }) {
           <p className="text-muted-foreground text-sm">No stats data.</p>
         ) : Object.keys(stats).length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No metrics registered — the cache emits an empty map until a StatsCollector middleware wraps the
-            backend.
+            No metrics registered — the cache emits an empty map until a
+            StatsCollector middleware wraps the backend.
           </p>
         ) : (
           <div className="overflow-x-auto">

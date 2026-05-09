@@ -109,7 +109,10 @@ export async function fetchSpec(clusterId: string): Promise<CacheSpec> {
   });
 
   if (!response.ok) {
-    throw new SpecFetchError(`spec fetch failed: HTTP ${response.status}`, response.status);
+    throw new SpecFetchError(
+      `spec fetch failed: HTTP ${response.status}`,
+      response.status,
+    );
   }
 
   const text = await response.text();

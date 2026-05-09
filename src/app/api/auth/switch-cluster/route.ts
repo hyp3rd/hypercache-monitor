@@ -42,7 +42,10 @@ export async function POST(req: NextRequest): Promise<Response> {
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "missing or invalid clusterId in request body", code: "BAD_REQUEST" },
+      {
+        error: "missing or invalid clusterId in request body",
+        code: "BAD_REQUEST",
+      },
       { status: 400 },
     );
   }
@@ -70,7 +73,11 @@ export async function POST(req: NextRequest): Promise<Response> {
   // not a permission gap.
   if (!existing) {
     return NextResponse.json(
-      { error: "no session for cluster; login required", code: "NEED_LOGIN", clusterId },
+      {
+        error: "no session for cluster; login required",
+        code: "NEED_LOGIN",
+        clusterId,
+      },
       { status: 401 },
     );
   }

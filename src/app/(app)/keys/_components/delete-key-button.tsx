@@ -46,7 +46,9 @@ export function DeleteKeyButton({
     startTransition(async () => {
       try {
         const result = await deleteKey(clusterId, keyName);
-        await qc.invalidateQueries({ queryKey: queryKeys.key(clusterId, keyName) });
+        await qc.invalidateQueries({
+          queryKey: queryKeys.key(clusterId, keyName),
+        });
         toast.success(
           result.deleted
             ? `Deleted ${keyName} from ${result.owners.length} owner${result.owners.length === 1 ? "" : "s"}`
@@ -55,7 +57,9 @@ export function DeleteKeyButton({
         onAfterDelete();
       } catch (err) {
         const e = err as CacheApiError;
-        toast.error(`Delete failed (${e.code ?? "?"}): ${e.message ?? "unknown"}`);
+        toast.error(
+          `Delete failed (${e.code ?? "?"}): ${e.message ?? "unknown"}`,
+        );
       }
     });
   }
@@ -63,8 +67,15 @@ export function DeleteKeyButton({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" className="gap-2">
-          <Trash2 aria-hidden className="h-3.5 w-3.5" />
+        <Button
+          variant="destructive"
+          size="sm"
+          className="gap-2"
+        >
+          <Trash2
+            aria-hidden
+            className="h-3.5 w-3.5"
+          />
           Delete
         </Button>
       </AlertDialogTrigger>
@@ -72,15 +83,28 @@ export function DeleteKeyButton({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this key?</AlertDialogTitle>
           <AlertDialogDescription>
-            <span className="text-foreground font-mono break-all">{keyName}</span> will be removed from every
-            replica on cluster <span className="font-mono">{clusterId}</span>. The operation is idempotent —
-            if the key never existed, the cluster reports success without a side effect.
+            <span className="text-foreground font-mono break-all">
+              {keyName}
+            </span>{" "}
+            will be removed from every replica on cluster{" "}
+            <span className="font-mono">{clusterId}</span>. The operation is
+            idempotent — if the key never existed, the cluster reports success
+            without a side effect.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={pending} className="gap-2">
-            {pending && <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />}
+          <AlertDialogAction
+            onClick={onConfirm}
+            disabled={pending}
+            className="gap-2"
+          >
+            {pending && (
+              <Loader2
+                aria-hidden
+                className="h-3.5 w-3.5 animate-spin"
+              />
+            )}
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

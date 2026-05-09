@@ -42,15 +42,19 @@ test.describe("bulk operations", () => {
     // alternative — writing to /tmp and uploading by path — would
     // depend on Playwright's worker filesystem, which is brittle
     // across CI runners.
-    const csvContent = ["key,value,ttl_ms", `e2e-bulk-1,hello,${30_000}`, `e2e-bulk-2,world,${60_000}`].join(
-      "\n",
-    );
+    const csvContent = [
+      "key,value,ttl_ms",
+      `e2e-bulk-1,hello,${30_000}`,
+      `e2e-bulk-2,world,${60_000}`,
+    ].join("\n");
 
-    await page.locator('input[type="file"][aria-label="Upload CSV"]').setInputFiles({
-      name: "fixture.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(csvContent),
-    });
+    await page
+      .locator('input[type="file"][aria-label="Upload CSV"]')
+      .setInputFiles({
+        name: "fixture.csv",
+        mimeType: "text/csv",
+        buffer: Buffer.from(csvContent),
+      });
 
     // CSV parsed → Store button is enabled with the right count.
     // Asserting on the button (not surrounding chrome text) avoids
@@ -61,16 +65,22 @@ test.describe("bulk operations", () => {
     await storeBtn.click();
 
     // Results table should render two "stored" rows
-    await expect(page.getByText(/2 results · 2 stored · 0 failed/)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/2 results · 2 stored · 0 failed/)).toBeVisible(
+      { timeout: 5_000 },
+    );
 
     // -- 2. Fetch --------------------------------------------------
     await page.getByRole("tab", { name: /^Fetch$/ }).click();
     await page.getByLabel("Keys to fetch").fill("e2e-bulk-1\ne2e-bulk-2");
     await page.getByRole("button", { name: /Fetch 2/ }).click();
-    await expect(page.getByText(/2 results · 2 found · 0 missing/)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/2 results · 2 found · 0 missing/)).toBeVisible(
+      { timeout: 5_000 },
+    );
 
     // The "Download CSV" button surfaces once results land
-    await expect(page.getByRole("button", { name: /Download CSV/ })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Download CSV/ }),
+    ).toBeVisible();
 
     // -- 3. Delete -------------------------------------------------
     await page.getByRole("tab", { name: /^Delete$/ }).click();
@@ -79,10 +89,14 @@ test.describe("bulk operations", () => {
 
     // Two-step confirmation: dialog with the count
     await expect(page.getByRole("alertdialog")).toBeVisible();
-    await expect(page.getByRole("alertdialog").getByText(/Delete 2 keys\?/)).toBeVisible();
+    await expect(
+      page.getByRole("alertdialog").getByText(/Delete 2 keys\?/),
+    ).toBeVisible();
     await page.getByRole("button", { name: /Confirm delete/ }).click();
 
-    await expect(page.getByText(/2 results · 2 deleted · 0 failed/)).toBeVisible({ timeout: 5_000 });
+    await expect(
+      page.getByText(/2 results · 2 deleted · 0 failed/),
+    ).toBeVisible({ timeout: 5_000 });
   });
 
   test("a11y: no axe-core violations on /bulk", async ({ page }) => {

@@ -6,12 +6,23 @@
  * are muted. Operators glance at this to confirm the key
  * landed where they expected.
  */
-export function OwnersStrip({ owners, node }: { owners: string[]; node: string }) {
+export function OwnersStrip({
+  owners,
+  node,
+}: {
+  owners: string[];
+  node: string;
+}) {
   if (owners.length === 0) {
-    return <p className="text-muted-foreground text-xs">No ring owners reported.</p>;
+    return (
+      <p className="text-muted-foreground text-xs">No ring owners reported.</p>
+    );
   }
   return (
-    <ul aria-label="Ring owners" className="flex flex-wrap items-center gap-1.5 text-xs">
+    <ul
+      aria-label="Ring owners"
+      className="flex flex-wrap items-center gap-1.5 text-xs"
+    >
       {owners.map((owner, i) => {
         const isPrimary = i === 0;
         const isHandler = owner === node;

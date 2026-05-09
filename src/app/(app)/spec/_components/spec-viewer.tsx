@@ -21,9 +21,21 @@
  * "use client" + state management.
  */
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // ---- Wire shapes ---------------------------------------------------
 
@@ -65,7 +77,9 @@ const METHOD_TONE: Record<RenderedMethod, string> = {
 
 export function SpecViewer({ spec }: { spec: Record<string, unknown> }) {
   const info = spec["info"] as Record<string, unknown> | undefined;
-  const paths = spec["paths"] as Record<string, Record<string, unknown>> | undefined;
+  const paths = spec["paths"] as
+    | Record<string, Record<string, unknown>>
+    | undefined;
 
   const operations = paths ? collectOperations(paths) : [];
 
@@ -75,11 +89,16 @@ export function SpecViewer({ spec }: { spec: Record<string, unknown> }) {
       {operations.length === 0 ? (
         <Card className="border-border/50 bg-card/60 backdrop-blur">
           <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground text-sm">No read-only operations defined in this spec.</p>
+            <p className="text-muted-foreground text-sm">
+              No read-only operations defined in this spec.
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <ul role="list" className="space-y-4">
+        <ul
+          role="list"
+          className="space-y-4"
+        >
           {operations.map((op) => (
             <li key={`${op.method}:${op.path}`}>
               <OperationCard op={op} />
@@ -107,9 +126,15 @@ function SpecInfoCard({ info }: { info: Record<string, unknown> }) {
             denies E2E `getByRole('heading', …)` selectors. */}
         <h2 className="flex flex-wrap items-baseline gap-2 text-lg leading-none font-semibold">
           <span>{title}</span>
-          {version && <span className="text-muted-foreground font-mono text-xs">v{version}</span>}
+          {version && (
+            <span className="text-muted-foreground font-mono text-xs">
+              v{version}
+            </span>
+          )}
         </h2>
-        {description && <CardDescription className="mt-1">{description}</CardDescription>}
+        {description && (
+          <CardDescription className="mt-1">{description}</CardDescription>
+        )}
       </CardHeader>
     </Card>
   );
@@ -119,7 +144,9 @@ function OperationCard({ op }: { op: ResolvedOperation }) {
   const parameters = Array.isArray(op.operation.parameters)
     ? (op.operation.parameters as ParameterLike[])
     : [];
-  const responses = isRecord(op.operation.responses) ? op.operation.responses : undefined;
+  const responses = isRecord(op.operation.responses)
+    ? op.operation.responses
+    : undefined;
 
   return (
     <Card className="border-border/50 bg-card/60 backdrop-blur">
@@ -130,12 +157,18 @@ function OperationCard({ op }: { op: ResolvedOperation }) {
           >
             {op.method}
           </span>
-          <code className="text-foreground font-mono text-sm font-medium break-all">{op.path}</code>
+          <code className="text-foreground font-mono text-sm font-medium break-all">
+            {op.path}
+          </code>
           {Array.isArray(op.operation.tags) &&
             (op.operation.tags as unknown[])
               .filter((t): t is string => typeof t === "string")
               .map((tag) => (
-                <Badge key={tag} variant="secondary" className="font-mono text-[10px]">
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="font-mono text-[10px]"
+                >
                   {tag}
                 </Badge>
               ))}
@@ -144,15 +177,23 @@ function OperationCard({ op }: { op: ResolvedOperation }) {
           // Real <h3> — see comment in SpecInfoCard for the reason
           // (CardTitle is a <div>; we want the heading hierarchy
           // page <h1> → spec-info <h2> → per-operation <h3>).
-          <h3 className="text-base leading-none font-semibold">{op.operation.summary}</h3>
+          <h3 className="text-base leading-none font-semibold">
+            {op.operation.summary}
+          </h3>
         )}
         {typeof op.operation.description === "string" && (
-          <CardDescription className="whitespace-pre-line">{op.operation.description}</CardDescription>
+          <CardDescription className="whitespace-pre-line">
+            {op.operation.description}
+          </CardDescription>
         )}
         {typeof op.operation.operationId === "string" && (
           <p className="text-muted-foreground text-xs">
-            <span className="font-medium tracking-wide uppercase">Operation ID</span>{" "}
-            <span className="text-foreground font-mono">{op.operation.operationId}</span>
+            <span className="font-medium tracking-wide uppercase">
+              Operation ID
+            </span>{" "}
+            <span className="text-foreground font-mono">
+              {op.operation.operationId}
+            </span>
           </p>
         )}
       </CardHeader>
@@ -200,24 +241,38 @@ function ParametersTable({ parameters }: { parameters: ParameterLike[] }) {
         <TableBody>
           {parameters.map((p, i) => {
             const schema = isRecord(p.schema) ? p.schema : undefined;
-            const type = schema && typeof schema["type"] === "string" ? schema["type"] : "—";
+            const type =
+              schema && typeof schema["type"] === "string"
+                ? schema["type"]
+                : "—";
             return (
-              <TableRow key={`${stringOr(p.name, "?")}-${stringOr(p.in, "?")}-${i}`}>
-                <TableCell className="font-mono text-xs">{stringOr(p.name, "—")}</TableCell>
+              <TableRow
+                key={`${stringOr(p.name, "?")}-${stringOr(p.in, "?")}-${i}`}
+              >
+                <TableCell className="font-mono text-xs">
+                  {stringOr(p.name, "—")}
+                </TableCell>
                 <TableCell className="text-muted-foreground font-mono text-xs">
                   {stringOr(p.in, "—")}
                 </TableCell>
                 <TableCell>
                   {p.required === true ? (
-                    <Badge variant="default" className="text-[10px]">
+                    <Badge
+                      variant="default"
+                      className="text-[10px]"
+                    >
                       required
                     </Badge>
                   ) : (
-                    <span className="text-muted-foreground text-xs">optional</span>
+                    <span className="text-muted-foreground text-xs">
+                      optional
+                    </span>
                   )}
                 </TableCell>
                 <TableCell className="font-mono text-xs">{type}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{stringOr(p.description, "")}</TableCell>
+                <TableCell className="text-muted-foreground text-xs">
+                  {stringOr(p.description, "")}
+                </TableCell>
               </TableRow>
             );
           })}
@@ -228,13 +283,20 @@ function ParametersTable({ parameters }: { parameters: ParameterLike[] }) {
 }
 
 function ResponsesList({ responses }: { responses: Record<string, unknown> }) {
-  const entries = Object.entries(responses).sort(([a], [b]) => a.localeCompare(b));
+  const entries = Object.entries(responses).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
   return (
-    <ul role="list" className="space-y-2">
+    <ul
+      role="list"
+      className="space-y-2"
+    >
       {entries.map(([code, value]) => {
         const tone = statusTone(code);
         const description =
-          isRecord(value) && typeof value["description"] === "string" ? value["description"] : "";
+          isRecord(value) && typeof value["description"] === "string"
+            ? value["description"]
+            : "";
         return (
           <li
             key={code}
@@ -246,7 +308,9 @@ function ResponsesList({ responses }: { responses: Record<string, unknown> }) {
               {code}
             </span>
             <span className="text-foreground text-sm">
-              {description || <em className="text-muted-foreground">(no description)</em>}
+              {description || (
+                <em className="text-muted-foreground">(no description)</em>
+              )}
             </span>
           </li>
         );
@@ -271,7 +335,9 @@ interface ResolvedOperation {
  * here we just defensively re-check, in case a future caller
  * passes an unfiltered spec.
  */
-function collectOperations(paths: Record<string, Record<string, unknown>>): ResolvedOperation[] {
+function collectOperations(
+  paths: Record<string, Record<string, unknown>>,
+): ResolvedOperation[] {
   const out: ResolvedOperation[] = [];
   for (const [path, item] of Object.entries(paths)) {
     if (!isRecord(item)) continue;
@@ -284,7 +350,9 @@ function collectOperations(paths: Record<string, Record<string, unknown>>): Reso
   return out.sort((a, b) => {
     const byPath = a.path.localeCompare(b.path);
     if (byPath !== 0) return byPath;
-    return RENDERED_METHODS.indexOf(a.method) - RENDERED_METHODS.indexOf(b.method);
+    return (
+      RENDERED_METHODS.indexOf(a.method) - RENDERED_METHODS.indexOf(b.method)
+    );
   });
 }
 
@@ -292,7 +360,8 @@ function statusTone(code: string): string {
   // First digit of the response code → tone bucket. `default` and
   // weird codes fall through to muted.
   const lead = code.charAt(0);
-  if (lead === "2") return "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20";
+  if (lead === "2")
+    return "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20";
   if (lead === "3") return "bg-sky-500/10 text-sky-400 ring-sky-500/20";
   if (lead === "4") return "bg-amber-500/10 text-amber-400 ring-amber-500/20";
   if (lead === "5") return "bg-rose-500/10 text-rose-400 ring-rose-500/20";

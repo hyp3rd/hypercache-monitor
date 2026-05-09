@@ -32,12 +32,14 @@
    * monospaced ramp.
    */
   --font-sans:
-    var(--font-sans), Roboto, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial,
-    sans-serif;
-  --font-serif: var(--font-serif), "Roboto Slab", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    var(--font-sans), Roboto, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-serif:
+    var(--font-serif), "Roboto Slab", ui-serif, Georgia, Cambria,
+    "Times New Roman", Times, serif;
   --font-mono:
-    var(--font-mono), "Roboto Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
+    var(--font-mono), "Roboto Mono", ui-monospace, SFMono-Regular, "SF Mono",
+    Menlo, Consolas, "Liberation Mono", monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -186,8 +188,16 @@
  */
 .grid-backdrop {
   background-image:
-    linear-gradient(to right, oklch(from var(--foreground) l c h / 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(from var(--foreground) l c h / 0.04) 1px, transparent 1px);
+    linear-gradient(
+      to right,
+      oklch(from var(--foreground) l c h / 0.04) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      oklch(from var(--foreground) l c h / 0.04) 1px,
+      transparent 1px
+    );
   background-size: 32px 32px;
 }
 

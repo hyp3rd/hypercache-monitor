@@ -86,15 +86,19 @@ function startWatching(path: string): void {
     unwatchFile(existing.path);
   }
 
-  watchFile(path, { interval: WATCH_INTERVAL_MS, persistent: false }, (curr, prev) => {
-    // mtime equality means watchFile fired spuriously (poll
-    // detected no real change). Skip — re-parsing identical
-    // content would still succeed but burns CPU + log spam.
-    if (curr.mtimeMs === prev.mtimeMs) {
-      return;
-    }
-    reloadClusters(path);
-  });
+  watchFile(
+    path,
+    { interval: WATCH_INTERVAL_MS, persistent: false },
+    (curr, prev) => {
+      // mtime equality means watchFile fired spuriously (poll
+      // detected no real change). Skip — re-parsing identical
+      // content would still succeed but burns CPU + log spam.
+      if (curr.mtimeMs === prev.mtimeMs) {
+        return;
+      }
+      reloadClusters(path);
+    },
+  );
 
   globalThis.__hypercacheClustersWatcher = { path };
 }
@@ -120,7 +124,9 @@ function reloadClusters(path: string): void {
     return;
   }
   current = next;
-  console.info(`[clusters] reloaded ${Object.keys(next).length} cluster(s) from ${path}`);
+  console.info(
+    `[clusters] reloaded ${Object.keys(next).length} cluster(s) from ${path}`,
+  );
 }
 
 export function getCluster(id: string): Cluster | undefined {

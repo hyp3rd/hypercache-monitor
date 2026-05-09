@@ -16,11 +16,15 @@ export const queryKeys = {
   cluster: (clusterId: string) => ["cluster", clusterId] as const,
   members: (clusterId: string) => ["cluster", clusterId, "members"] as const,
   ring: (clusterId: string) => ["cluster", clusterId, "ring"] as const,
-  heartbeat: (clusterId: string) => ["cluster", clusterId, "heartbeat"] as const,
+  heartbeat: (clusterId: string) =>
+    ["cluster", clusterId, "heartbeat"] as const,
   stats: (clusterId: string) => ["cluster", clusterId, "stats"] as const,
   config: (clusterId: string) => ["cluster", clusterId, "config"] as const,
-  distMetrics: (clusterId: string) => ["cluster", clusterId, "dist-metrics"] as const,
+  distMetrics: (clusterId: string) =>
+    ["cluster", clusterId, "dist-metrics"] as const,
   // Phase B1 — Single-Key Inspector
-  key: (clusterId: string, key: string) => ["cluster", clusterId, "key", key] as const,
-  keyOwners: (clusterId: string, key: string) => ["cluster", clusterId, "key", key, "owners"] as const,
+  key: (clusterId: string, key: string) =>
+    ["cluster", clusterId, "key", key] as const,
+  keyOwners: (clusterId: string, key: string) =>
+    ["cluster", clusterId, "key", key, "owners"] as const,
 } as const;

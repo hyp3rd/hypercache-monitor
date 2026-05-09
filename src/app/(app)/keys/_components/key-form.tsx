@@ -65,7 +65,9 @@ export function KeyForm({
           body,
           ttl: ttl.trim() || undefined,
         });
-        await qc.invalidateQueries({ queryKey: queryKeys.key(clusterId, keyName) });
+        await qc.invalidateQueries({
+          queryKey: queryKeys.key(clusterId, keyName),
+        });
         toast.success(
           `Stored ${result.bytes.toLocaleString()} byte${result.bytes === 1 ? "" : "s"} on ${result.owners.length} owner${result.owners.length === 1 ? "" : "s"}`,
         );
@@ -80,7 +82,10 @@ export function KeyForm({
   const dirty = body !== initialBody || ttl !== "";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+    >
       <div className="space-y-2">
         <Label
           htmlFor="key-body"
@@ -113,8 +118,10 @@ export function KeyForm({
           className="font-mono"
         />
         <p className="text-muted-foreground text-xs">
-          Empty → no expiration. Examples: <code className="font-mono">30s</code>,{" "}
-          <code className="font-mono">5m</code>, <code className="font-mono">2h30m</code>.
+          Empty → no expiration. Examples:{" "}
+          <code className="font-mono">30s</code>,{" "}
+          <code className="font-mono">5m</code>,{" "}
+          <code className="font-mono">2h30m</code>.
         </p>
       </div>
       {error !== null && (
@@ -125,11 +132,21 @@ export function KeyForm({
           {error}
         </p>
       )}
-      <Button type="submit" disabled={pending || !dirty} className="gap-2">
+      <Button
+        type="submit"
+        disabled={pending || !dirty}
+        className="gap-2"
+      >
         {pending ? (
-          <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />
+          <Loader2
+            aria-hidden
+            className="h-3.5 w-3.5 animate-spin"
+          />
         ) : (
-          <Save aria-hidden className="h-3.5 w-3.5" />
+          <Save
+            aria-hidden
+            className="h-3.5 w-3.5"
+          />
         )}
         {pending ? "Storing…" : "Store"}
       </Button>

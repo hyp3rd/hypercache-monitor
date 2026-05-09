@@ -85,23 +85,36 @@ export function FetchTab({ clusterId }: { clusterId: string }) {
         />
         <div className="flex items-center justify-between gap-3">
           <p className="text-muted-foreground text-xs">
-            Chunked at 1,000 items per request. Each chunk&apos;s results stream into the table below.
+            Chunked at 1,000 items per request. Each chunk&apos;s results stream
+            into the table below.
           </p>
-          <Button onClick={run} disabled={running || keys.length === 0}>
-            <Play aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+          <Button
+            onClick={run}
+            disabled={running || keys.length === 0}
+          >
+            <Play
+              aria-hidden
+              className="mr-1.5 h-3.5 w-3.5"
+            />
             {running ? "Running…" : `Fetch ${keys.length.toLocaleString()}`}
           </Button>
         </div>
       </div>
 
-      <BulkProgress progress={progress} running={running} />
+      <BulkProgress
+        progress={progress}
+        running={running}
+      />
 
       {error !== null && !running && (
         <p
           role="alert"
           className="bg-destructive/10 text-destructive ring-destructive/20 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm ring-1"
         >
-          <AlertTriangle aria-hidden className="h-3.5 w-3.5 shrink-0" />
+          <AlertTriangle
+            aria-hidden
+            className="h-3.5 w-3.5 shrink-0"
+          />
           <span className="font-mono text-xs">{error}</span>
         </p>
       )}
@@ -110,7 +123,10 @@ export function FetchTab({ clusterId }: { clusterId: string }) {
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-muted-foreground text-sm">
-              <span className="text-foreground font-mono">{results.length.toLocaleString()}</span> results ·{" "}
+              <span className="text-foreground font-mono">
+                {results.length.toLocaleString()}
+              </span>{" "}
+              results ·{" "}
               <span className="text-foreground font-mono">
                 {results.filter((r) => r.found).length.toLocaleString()}
               </span>{" "}
@@ -120,12 +136,23 @@ export function FetchTab({ clusterId }: { clusterId: string }) {
               </span>{" "}
               missing
             </p>
-            <Button variant="outline" size="sm" onClick={downloadCsv}>
-              <Download aria-hidden className="mr-1.5 h-3.5 w-3.5" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadCsv}
+            >
+              <Download
+                aria-hidden
+                className="mr-1.5 h-3.5 w-3.5"
+              />
               Download CSV
             </Button>
           </div>
-          <DataTable columns={fetchColumns} data={results} filterPlaceholder="Filter by key…" />
+          <DataTable
+            columns={fetchColumns}
+            data={results}
+            filterPlaceholder="Filter by key…"
+          />
         </div>
       )}
     </div>
@@ -136,19 +163,29 @@ const fetchColumns: ColumnDef<BatchGetResult>[] = [
   {
     accessorKey: "key",
     header: "Key",
-    cell: ({ row }) => <span className="font-mono text-xs">{row.original.key}</span>,
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">{row.original.key}</span>
+    ),
   },
   {
     accessorKey: "found",
     header: "Status",
-    cell: ({ row }) => <StatusPill ok={row.original.found} okLabel="found" failLabel="missing" />,
+    cell: ({ row }) => (
+      <StatusPill
+        ok={row.original.found}
+        okLabel="found"
+        failLabel="missing"
+      />
+    ),
   },
   {
     accessorKey: "ttl_ms",
     header: "TTL",
     cell: ({ row }) =>
       row.original.ttl_ms !== undefined ? (
-        <span className="text-muted-foreground font-mono text-xs">{formatTtlMs(row.original.ttl_ms)}</span>
+        <span className="text-muted-foreground font-mono text-xs">
+          {formatTtlMs(row.original.ttl_ms)}
+        </span>
       ) : (
         <span className="text-muted-foreground/50">—</span>
       ),
@@ -158,14 +195,26 @@ const fetchColumns: ColumnDef<BatchGetResult>[] = [
     header: "Value (preview)",
     enableSorting: false,
     cell: ({ row }) => {
-      if (!row.original.found) return <span className="text-muted-foreground/50">—</span>;
-      const preview = row.original.value !== undefined ? bestEffortUtf8(row.original.value).slice(0, 64) : "";
+      if (!row.original.found)
+        return <span className="text-muted-foreground/50">—</span>;
+      const preview =
+        row.original.value !== undefined
+          ? bestEffortUtf8(row.original.value).slice(0, 64)
+          : "";
       return <span className="font-mono text-xs">{preview || "(empty)"}</span>;
     },
   },
 ];
 
-function StatusPill({ ok, okLabel, failLabel }: { ok: boolean; okLabel: string; failLabel: string }) {
+function StatusPill({
+  ok,
+  okLabel,
+  failLabel,
+}: {
+  ok: boolean;
+  okLabel: string;
+  failLabel: string;
+}) {
   return (
     <span
       className={

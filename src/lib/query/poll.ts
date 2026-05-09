@@ -17,7 +17,10 @@ import { useEffect, useState } from "react";
  * poll. Higher and the UI lags membership changes; lower and
  * we're hammering the proxy for nothing.
  */
-export function usePollInterval(opts: { active: number; idle: number }): number {
+export function usePollInterval(opts: {
+  active: number;
+  idle: number;
+}): number {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {

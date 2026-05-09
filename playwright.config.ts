@@ -24,7 +24,8 @@ import { CLUSTERS_YAML_PATH } from "./tests/e2e/fixtures/clusters-yaml";
 // 32-char minimum per src/env/server.ts. Test-only secret —
 // regenerated each run is unnecessary because the cookie never
 // crosses a process boundary in the test suite.
-const TEST_SESSION_SECRET = "playwright-iron-session-secret-not-for-prod-32chars-min";
+const TEST_SESSION_SECRET =
+  "playwright-iron-session-secret-not-for-prod-32chars-min";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -58,12 +59,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
 
-  projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-    },
-  ],
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 
   webServer: {
     command: process.env["CI"]

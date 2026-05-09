@@ -30,12 +30,16 @@ async function login(page: import("@playwright/test").Page) {
 }
 
 test.describe("metrics dashboard", () => {
-  test("renders all section cards with values from /dist/metrics", async ({ page }) => {
+  test("renders all section cards with values from /dist/metrics", async ({
+    page,
+  }) => {
     await login(page);
     await page.goto("/metrics");
 
     // Page heading
-    await expect(page.getByRole("heading", { name: "Metrics", level: 1 })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Metrics", level: 1 }),
+    ).toBeVisible();
 
     // Each section card title is a heading inside the card. Use
     // a regex anchor so partial matches across other elements
@@ -51,7 +55,9 @@ test.describe("metrics dashboard", () => {
       "Per-name stats",
     ];
     for (const title of titles) {
-      await expect(page.getByText(title, { exact: true }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText(title, { exact: true }).first()).toBeVisible({
+        timeout: 10_000,
+      });
     }
 
     // Capacity card surfaces the eviction algorithm. The
@@ -68,8 +74,12 @@ test.describe("metrics dashboard", () => {
 
     // Per-name stats table renders both fixture metrics.
     const statsTable = page.getByRole("table");
-    await expect(statsTable.getByText("cache.get", { exact: true })).toBeVisible();
-    await expect(statsTable.getByText("cache.set", { exact: true })).toBeVisible();
+    await expect(
+      statsTable.getByText("cache.get", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      statsTable.getByText("cache.set", { exact: true }),
+    ).toBeVisible();
   });
 
   test("a11y: no axe-core violations on /metrics", async ({ page }) => {
@@ -79,7 +89,9 @@ test.describe("metrics dashboard", () => {
     // Wait for cards to finish their first paint. The Capacity
     // card lights up as soon as /config lands, so it's the
     // earliest stable signal.
-    await expect(page.getByText("Capacity", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText("Capacity", { exact: true }).first(),
+    ).toBeVisible();
 
     // Same disabled rules as topology — see topology.spec.ts
     // for the rationale + tracked follow-up.

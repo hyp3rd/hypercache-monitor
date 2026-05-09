@@ -66,7 +66,10 @@ export function DeleteTab({ clusterId }: { clusterId: string }) {
       toast[failed === 0 ? "success" : "warning"](
         `Deleted ${deleted.toLocaleString()} of ${out.results.length.toLocaleString()}`,
         {
-          description: failed === 0 ? "All keys removed." : `${failed} key(s) failed — see results table.`,
+          description:
+            failed === 0
+              ? "All keys removed."
+              : `${failed} key(s) failed — see results table.`,
         },
       );
     } catch (e) {
@@ -88,25 +91,43 @@ export function DeleteTab({ clusterId }: { clusterId: string }) {
         />
         <div className="flex items-center justify-between gap-3">
           <p className="text-muted-foreground text-xs">
-            Chunked at 1,000 keys per request. A two-step confirmation runs before any keys are removed.
+            Chunked at 1,000 keys per request. A two-step confirmation runs
+            before any keys are removed.
           </p>
-          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+          >
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={running || keys.length === 0}>
-                <Trash2 aria-hidden className="mr-1.5 h-3.5 w-3.5" />
-                {running ? "Running…" : `Delete ${keys.length.toLocaleString()}`}
+              <Button
+                variant="destructive"
+                disabled={running || keys.length === 0}
+              >
+                <Trash2
+                  aria-hidden
+                  className="mr-1.5 h-3.5 w-3.5"
+                />
+                {running
+                  ? "Running…"
+                  : `Delete ${keys.length.toLocaleString()}`}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete {keys.length.toLocaleString()} keys?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  Delete {keys.length.toLocaleString()} keys?
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes the selected keys from the cluster. There is no undo.
+                  This permanently removes the selected keys from the cluster.
+                  There is no undo.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="border-border/50 bg-card/50 max-h-40 overflow-auto rounded-md border p-2 font-mono text-[11px]">
                 {keys.slice(0, 5).map((k) => (
-                  <p key={k} className="truncate">
+                  <p
+                    key={k}
+                    className="truncate"
+                  >
                     {k}
                   </p>
                 ))}
@@ -118,7 +139,10 @@ export function DeleteTab({ clusterId }: { clusterId: string }) {
               </div>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={run} className="bg-destructive hover:bg-destructive/90">
+                <AlertDialogAction
+                  onClick={run}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
                   Confirm delete
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -127,14 +151,20 @@ export function DeleteTab({ clusterId }: { clusterId: string }) {
         </div>
       </div>
 
-      <BulkProgress progress={progress} running={running} />
+      <BulkProgress
+        progress={progress}
+        running={running}
+      />
 
       {error !== null && !running && (
         <p
           role="alert"
           className="bg-destructive/10 text-destructive ring-destructive/20 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm ring-1"
         >
-          <AlertTriangle aria-hidden className="h-3.5 w-3.5 shrink-0" />
+          <AlertTriangle
+            aria-hidden
+            className="h-3.5 w-3.5 shrink-0"
+          />
           <span className="font-mono text-xs">{error}</span>
         </p>
       )}
@@ -142,7 +172,10 @@ export function DeleteTab({ clusterId }: { clusterId: string }) {
       {results.length > 0 && (
         <div className="space-y-3">
           <p className="text-muted-foreground text-sm">
-            <span className="text-foreground font-mono">{results.length.toLocaleString()}</span> results ·{" "}
+            <span className="text-foreground font-mono">
+              {results.length.toLocaleString()}
+            </span>{" "}
+            results ·{" "}
             <span className="text-foreground font-mono">
               {results.filter((r) => r.deleted).length.toLocaleString()}
             </span>{" "}
@@ -152,7 +185,11 @@ export function DeleteTab({ clusterId }: { clusterId: string }) {
             </span>{" "}
             failed
           </p>
-          <DataTable columns={deleteColumns} data={results} filterPlaceholder="Filter by key…" />
+          <DataTable
+            columns={deleteColumns}
+            data={results}
+            filterPlaceholder="Filter by key…"
+          />
         </div>
       )}
     </div>
@@ -163,7 +200,9 @@ const deleteColumns: ColumnDef<BatchDeleteResult>[] = [
   {
     accessorKey: "key",
     header: "Key",
-    cell: ({ row }) => <span className="font-mono text-xs">{row.original.key}</span>,
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">{row.original.key}</span>
+    ),
   },
   {
     accessorKey: "deleted",
@@ -185,7 +224,8 @@ const deleteColumns: ColumnDef<BatchDeleteResult>[] = [
     header: "Error",
     enableSorting: false,
     cell: ({ row }) => {
-      if (row.original.deleted) return <span className="text-muted-foreground/50">—</span>;
+      if (row.original.deleted)
+        return <span className="text-muted-foreground/50">—</span>;
       return (
         <span className="text-destructive font-mono text-xs">
           {row.original.code ? `[${row.original.code}] ` : ""}

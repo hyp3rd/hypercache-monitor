@@ -38,7 +38,9 @@ describe("specSchema", () => {
     };
     const parsed = specSchema.parse(raw);
     expect(parsed.info.title).toBe("HyperCache");
-    expect(parsed.components?.securitySchemes?.bearerAuth?.scheme).toBe("bearer");
+    expect(parsed.components?.securitySchemes?.bearerAuth?.scheme).toBe(
+      "bearer",
+    );
   });
 
   it("preserves unknown securityScheme fields (passthrough)", () => {
@@ -47,7 +49,9 @@ describe("specSchema", () => {
       scheme: "bearer",
       "x-custom": "future-cache-extension",
     });
-    expect((parsed as Record<string, unknown>)["x-custom"]).toBe("future-cache-extension");
+    expect((parsed as Record<string, unknown>)["x-custom"]).toBe(
+      "future-cache-extension",
+    );
   });
 
   it("treats missing components.securitySchemes as undefined (single-node demo cluster)", () => {
@@ -60,9 +64,7 @@ describe("specSchema", () => {
 
   it("rejects responses missing the required openapi version field", () => {
     expect(() =>
-      specSchema.parse({
-        info: { title: "HyperCache", version: "1.0.0" },
-      }),
+      specSchema.parse({ info: { title: "HyperCache", version: "1.0.0" } }),
     ).toThrow();
   });
 });

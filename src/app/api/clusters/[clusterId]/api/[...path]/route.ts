@@ -19,10 +19,14 @@ interface RouteContext {
 
 async function handle(req: NextRequest, ctx: RouteContext): Promise<Response> {
   const { path } = await ctx.params;
-  return proxyToCache(req, {
-    target: "api",
-    path: "/" + path.join("/"),
-  });
+  return proxyToCache(req, { target: "api", path: "/" + path.join("/") });
 }
 
-export { handle as DELETE, handle as GET, handle as HEAD, handle as PATCH, handle as POST, handle as PUT };
+export {
+  handle as DELETE,
+  handle as GET,
+  handle as HEAD,
+  handle as PATCH,
+  handle as POST,
+  handle as PUT,
+};

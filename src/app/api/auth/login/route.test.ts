@@ -20,9 +20,7 @@ import { POST } from "./route";
  * or wrong scope set would compromise downstream auth gates.
  */
 
-vi.mock("@/lib/auth/session", () => ({
-  getSession: vi.fn(),
-}));
+vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
 vi.mock("@/lib/clusters/registry", () => ({
   getCluster: vi.fn(),
@@ -41,7 +39,10 @@ const fakeCluster = {
 
 interface FakeSession {
   activeClusterId?: string;
-  sessions?: Record<string, { token: string; identity: string; scopes: ("read" | "write" | "admin")[] }>;
+  sessions?: Record<
+    string,
+    { token: string; identity: string; scopes: ("read" | "write" | "admin")[] }
+  >;
   save: ReturnType<typeof vi.fn>;
 }
 
@@ -76,17 +77,21 @@ describe("POST /api/auth/login (Phase C2 — /v1/me probe)", () => {
     const session = makeSession({});
     vi.mocked(getSession).mockResolvedValueOnce(session as never);
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ id: "ops-rw", scopes: ["read", "write"] }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
+      new Response(
+        JSON.stringify({ id: "ops-rw", scopes: ["read", "write"] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
     );
 
     const res = await POST(makeReq({ token: "t" }));
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toMatchObject({ ok: true, clusterId: "default", identity: "ops-rw" });
+    expect(body).toMatchObject({
+      ok: true,
+      clusterId: "default",
+      identity: "ops-rw",
+    });
     expect(body.scopes).toEqual(["read", "write"]);
 
     expect(session.activeClusterId).toBe("default");
@@ -100,16 +105,24 @@ describe("POST /api/auth/login (Phase C2 — /v1/me probe)", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(String(url)).toBe("http://cache:8080/v1/me");
-    expect((init as RequestInit).headers).toMatchObject({ authorization: "Bearer t" });
+    expect((init as RequestInit).headers).toMatchObject({
+      authorization: "Bearer t",
+    });
   });
 
   it("ignores unknown forward-compat fields in /v1/me body", async () => {
     const session = makeSession({});
     vi.mocked(getSession).mockResolvedValueOnce(session as never);
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ id: "ops", scopes: ["read"], via: "bearer", future_field: 42 }), {
-        status: 200,
-      }),
+      new Response(
+        JSON.stringify({
+          id: "ops",
+          scopes: ["read"],
+          via: "bearer",
+          future_field: 42,
+        }),
+        { status: 200 },
+      ),
     );
 
     const res = await POST(makeReq({ token: "t" }));
@@ -158,7 +171,9 @@ describe("POST /api/auth/login (Phase C2 — /v1/me probe)", () => {
   });
 
   it("returns 502 when /v1/me returns non-JSON body", async () => {
-    fetchMock.mockResolvedValueOnce(new Response("garbage-not-json", { status: 200 }));
+    fetchMock.mockResolvedValueOnce(
+      new Response("garbage-not-json", { status: 200 }),
+    );
     const res = await POST(makeReq({ token: "t" }));
     expect(res.status).toBe(502);
     expect((await res.json()).code).toBe("UPSTREAM_FAILURE");
@@ -226,14 +241,21 @@ describe("POST /api/auth/login (Phase C2 — /v1/me probe)", () => {
       mgmtBaseUrl: "https://cache-eu.example.com:8081",
     });
     const session = makeSession({
-      sessions: { default: { token: "old", identity: "default", scopes: ["read"] } },
+      sessions: {
+        default: { token: "old", identity: "default", scopes: ["read"] },
+      },
     });
     vi.mocked(getSession).mockResolvedValueOnce(session as never);
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ id: "eu-ops", scopes: ["read", "admin"] }), { status: 200 }),
+      new Response(
+        JSON.stringify({ id: "eu-ops", scopes: ["read", "admin"] }),
+        { status: 200 },
+      ),
     );
 
-    const res = await POST(makeReq({ token: "eu-token", clusterId: "prod-eu" }));
+    const res = await POST(
+      makeReq({ token: "eu-token", clusterId: "prod-eu" }),
+    );
     expect(res.status).toBe(200);
 
     expect(session.activeClusterId).toBe("prod-eu");

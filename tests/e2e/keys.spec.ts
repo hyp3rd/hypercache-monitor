@@ -52,13 +52,15 @@ test.describe("single-key inspector", () => {
 
     // After re-fetch, the populated tabpanel surfaces the
     // stored value.
-    await expect(page.getByRole("tabpanel").getByText("hello world", { exact: true })).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(
+      page.getByRole("tabpanel").getByText("hello world", { exact: true }),
+    ).toBeVisible({ timeout: 10_000 });
 
     // 3. Switch to Hex tab — sanity check the decode works.
     await page.getByRole("tab", { name: /hex/i }).click();
-    await expect(page.getByText("68 65 6c 6c 6f 20 77 6f 72 6c 64", { exact: false })).toBeVisible();
+    await expect(
+      page.getByText("68 65 6c 6c 6f 20 77 6f 72 6c 64", { exact: false }),
+    ).toBeVisible();
 
     // 4. Delete via confirmation dialog. The trigger and the
     //    confirm action both have `name: "Delete"`; scope by
@@ -75,6 +77,8 @@ test.describe("single-key inspector", () => {
     // Dialog dismissed → URL clears the search param OR the
     // empty-state card renders. Either way we shouldn't see
     // the previously-rendered value.
-    await expect(page.getByText("hello world")).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("hello world")).not.toBeVisible({
+      timeout: 5_000,
+    });
   });
 });

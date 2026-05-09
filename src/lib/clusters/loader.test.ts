@@ -27,13 +27,19 @@ describe("loadClusters — env-fallback path", () => {
   });
 
   it("throws ClusterLoaderError when neither YAML nor env vars are configured", () => {
-    expect(() => loadClusters({ clustersPath: undefined, apiUrl: undefined, mgmtUrl: undefined })).toThrow(
-      ClusterLoaderError,
-    );
+    expect(() =>
+      loadClusters({
+        clustersPath: undefined,
+        apiUrl: undefined,
+        mgmtUrl: undefined,
+      }),
+    ).toThrow(ClusterLoaderError);
   });
 
   it("treats empty strings as 'unset' on the env-fallback path", () => {
-    expect(() => loadClusters({ clustersPath: "", apiUrl: "", mgmtUrl: "" })).toThrow(ClusterLoaderError);
+    expect(() =>
+      loadClusters({ clustersPath: "", apiUrl: "", mgmtUrl: "" }),
+    ).toThrow(ClusterLoaderError);
   });
 });
 
@@ -133,7 +139,8 @@ prod-eu:
         apiUrl: undefined,
         mgmtUrl: undefined,
         // Slash makes the ID dangerous as a URL path segment.
-        readFile: () => `bad/id:\n  name: x\n  apiBaseUrl: "http://x"\n  mgmtBaseUrl: "http://y"\n`,
+        readFile: () =>
+          `bad/id:\n  name: x\n  apiBaseUrl: "http://x"\n  mgmtBaseUrl: "http://y"\n`,
       }),
     ).toThrow(ClusterLoaderError);
   });
@@ -155,7 +162,8 @@ prod-eu:
         clustersPath: "/etc/monitor/clusters.yaml",
         apiUrl: undefined,
         mgmtUrl: undefined,
-        readFile: () => `default:\n  name: x\n  apiBaseUrl: "not-a-url"\n  mgmtBaseUrl: "http://y"\n`,
+        readFile: () =>
+          `default:\n  name: x\n  apiBaseUrl: "not-a-url"\n  mgmtBaseUrl: "http://y"\n`,
       }),
     ).toThrow(/apiBaseUrl/);
   });
@@ -191,7 +199,10 @@ prod-eu:
       mgmtUrl: undefined,
       readFile: () => yamlWithHosts,
     });
-    expect(out["prod-eu"]?.hosts).toEqual(["monitor-eu.example.com", "monitor-eu.internal"]);
+    expect(out["prod-eu"]?.hosts).toEqual([
+      "monitor-eu.example.com",
+      "monitor-eu.internal",
+    ]);
     // Cluster without `hosts` keeps the field undefined (not [])
     // so login-page logic can distinguish "no allowlist" from
     // "explicitly empty allowlist" (which would never match).

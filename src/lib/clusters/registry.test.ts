@@ -20,10 +20,7 @@ import type { Cluster } from "./types";
 
 vi.mock("./loader", async () => {
   const actual = await vi.importActual<typeof import("./loader")>("./loader");
-  return {
-    ...actual,
-    loadClusters: vi.fn(),
-  };
+  return { ...actual, loadClusters: vi.fn() };
 });
 
 vi.mock("@/env/server", () => ({
@@ -40,11 +37,7 @@ vi.mock("@/env/server", () => ({
 // Stub out the real watcher so the test doesn't bind a poller.
 vi.mock("node:fs", async () => {
   const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
-  return {
-    ...actual,
-    watchFile: vi.fn(),
-    unwatchFile: vi.fn(),
-  };
+  return { ...actual, watchFile: vi.fn(), unwatchFile: vi.fn() };
 });
 
 const { loadClusters } = await import("./loader");
@@ -94,26 +87,37 @@ describe("registry — initial load + atomic swap on reload", () => {
 
     // Operator edits clusters.yaml — the next loadClusters call
     // returns 2 clusters.
-    vi.mocked(loadClusters).mockReturnValueOnce({ default: clusterA, "prod-eu": clusterB });
+    vi.mocked(loadClusters).mockReturnValueOnce({
+      default: clusterA,
+      "prod-eu": clusterB,
+    });
     mod.__test_reloadFromPath("/tmp/test-clusters.yaml");
 
     expect(mod.listClusters()).toHaveLength(2);
     expect(mod.getCluster("prod-eu")?.apiBaseUrl).toBe("http://b:8080");
-    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining("reloaded 2 cluster(s)"));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      expect.stringContaining("reloaded 2 cluster(s)"),
+    );
   });
 
   it("getter reads the latest reference after multiple reloads", async () => {
-    vi.mocked(loadClusters).mockReturnValueOnce({ a: { ...clusterA, id: "a" } });
+    vi.mocked(loadClusters).mockReturnValueOnce({
+      a: { ...clusterA, id: "a" },
+    });
     vi.resetModules();
     const mod = await import("./registry");
     expect(mod.getCluster("a")).toBeDefined();
 
-    vi.mocked(loadClusters).mockReturnValueOnce({ b: { ...clusterB, id: "b" } });
+    vi.mocked(loadClusters).mockReturnValueOnce({
+      b: { ...clusterB, id: "b" },
+    });
     mod.__test_reloadFromPath("/tmp/test-clusters.yaml");
     expect(mod.getCluster("a")).toBeUndefined();
     expect(mod.getCluster("b")).toBeDefined();
 
-    vi.mocked(loadClusters).mockReturnValueOnce({ c: { ...clusterA, id: "c" } });
+    vi.mocked(loadClusters).mockReturnValueOnce({
+      c: { ...clusterA, id: "c" },
+    });
     mod.__test_reloadFromPath("/tmp/test-clusters.yaml");
     expect(mod.getCluster("b")).toBeUndefined();
     expect(mod.getCluster("c")).toBeDefined();
@@ -128,12 +132,16 @@ describe("registry — bad-input handling on reload", () => {
     const before = mod.listClusters();
 
     vi.mocked(loadClusters).mockImplementationOnce(() => {
-      throw new ClusterLoaderError("invalid clusters YAML at /tmp/test-clusters.yaml: bad indent");
+      throw new ClusterLoaderError(
+        "invalid clusters YAML at /tmp/test-clusters.yaml: bad indent",
+      );
     });
     mod.__test_reloadFromPath("/tmp/test-clusters.yaml");
 
     expect(mod.listClusters()).toEqual(before);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining("[clusters] reload failed"));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[clusters] reload failed"),
+    );
     expect(consoleInfoSpy).not.toHaveBeenCalled();
   });
 
@@ -150,7 +158,9 @@ describe("registry — bad-input handling on reload", () => {
     mod.__test_reloadFromPath("/tmp/test-clusters.yaml");
 
     expect(mod.getCluster("default")).toBeDefined();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining("ENOENT"));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("ENOENT"),
+    );
   });
 
   it("keeps the previous registry on schema-violation (e.g. duplicate hosts)", async () => {
@@ -166,7 +176,9 @@ describe("registry — bad-input handling on reload", () => {
     mod.__test_reloadFromPath("/tmp/test-clusters.yaml");
 
     expect(mod.getCluster("default")).toBeDefined();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining("already claimed"));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("already claimed"),
+    );
   });
 
   it("keeps the previous registry on a non-ClusterLoaderError throw", async () => {
@@ -182,6 +194,8 @@ describe("registry — bad-input handling on reload", () => {
     mod.__test_reloadFromPath("/tmp/test-clusters.yaml");
 
     expect(mod.getCluster("default")).toBeDefined();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining("unexpected fs glitch"));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("unexpected fs glitch"),
+    );
   });
 });

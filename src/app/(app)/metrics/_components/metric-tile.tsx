@@ -61,17 +61,33 @@ export function MetricTile({
   return (
     <figure className="border-border/50 bg-card/50 hover:border-border hover:bg-card relative overflow-hidden rounded-lg border p-3 transition-colors">
       <div className="flex items-start justify-between gap-2">
-        <figcaption className="text-muted-foreground text-xs font-medium">{label}</figcaption>
-        <span className={cn("flex h-7 w-7 items-center justify-center rounded-md ring-1", styles.tile)}>
-          <Icon aria-hidden className="h-3.5 w-3.5" />
+        <figcaption className="text-muted-foreground text-xs font-medium">
+          {label}
+        </figcaption>
+        <span
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-md ring-1",
+            styles.tile,
+          )}
+        >
+          <Icon
+            aria-hidden
+            className="h-3.5 w-3.5"
+          />
         </span>
       </div>
-      <p className="mt-2 font-mono text-xl font-semibold tabular-nums">{series.current.toLocaleString()}</p>
+      <p className="mt-2 font-mono text-xl font-semibold tabular-nums">
+        {series.current.toLocaleString()}
+      </p>
       <p className="text-muted-foreground mt-0.5 font-mono text-[11px] tabular-nums">
         {series.rate === null ? "—" : `${formatRate(series.rate)}${unit}`}
       </p>
       <div className="mt-2">
-        <Sparkline data={series.deltas} color={styles.spark} ariaLabel={`${label} rate over time`} />
+        <Sparkline
+          data={series.deltas}
+          color={styles.spark}
+          ariaLabel={`${label} rate over time`}
+        />
       </div>
     </figure>
   );

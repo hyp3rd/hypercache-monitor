@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { deleteResponseSchema, itemEnvelopeSchema, ownersResponseSchema, putResponseSchema } from "./keys";
+import {
+  deleteResponseSchema,
+  itemEnvelopeSchema,
+  ownersResponseSchema,
+  putResponseSchema,
+} from "./keys";
 
 /**
  * Schema fixtures for the single-key API. The shapes here
@@ -78,12 +83,25 @@ describe("putResponseSchema", () => {
 
 describe("deleteResponseSchema", () => {
   it("accepts the canonical shape", () => {
-    expect(deleteResponseSchema.parse({ key: "k", deleted: true, node: "n", owners: ["n"] })).toBeTruthy();
+    expect(
+      deleteResponseSchema.parse({
+        key: "k",
+        deleted: true,
+        node: "n",
+        owners: ["n"],
+      }),
+    ).toBeTruthy();
   });
 });
 
 describe("ownersResponseSchema", () => {
   it("accepts the canonical shape", () => {
-    expect(ownersResponseSchema.parse({ key: "k", owners: ["a", "b", "c"], node: "a" })).toBeTruthy();
+    expect(
+      ownersResponseSchema.parse({
+        key: "k",
+        owners: ["a", "b", "c"],
+        node: "a",
+      }),
+    ).toBeTruthy();
   });
 });

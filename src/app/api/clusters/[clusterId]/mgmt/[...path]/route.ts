@@ -26,20 +26,21 @@ async function handle(req: NextRequest, ctx: RouteContext): Promise<Response> {
   // Hard guard: the dedicated control route handles mutations.
   // If a request reaches this catch-all with a control verb,
   // refuse — keeps the admin-gating logic in one place.
-  if (segments === "evict" || segments === "trigger-expiration" || segments === "clear") {
+  if (
+    segments === "evict" ||
+    segments === "trigger-expiration" ||
+    segments === "clear"
+  ) {
     return new Response(
-      JSON.stringify({ error: "use /mgmt/control/[op] for mutating ops", code: "WRONG_ROUTE" }),
-      {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      },
+      JSON.stringify({
+        error: "use /mgmt/control/[op] for mutating ops",
+        code: "WRONG_ROUTE",
+      }),
+      { status: 400, headers: { "content-type": "application/json" } },
     );
   }
 
-  return proxyToCache(req, {
-    target: "mgmt",
-    path: "/" + segments,
-  });
+  return proxyToCache(req, { target: "mgmt", path: "/" + segments });
 }
 
 export { handle as GET, handle as HEAD };

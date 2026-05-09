@@ -42,11 +42,17 @@ interface RouteContext {
   params: Promise<{ clusterId: string; op: string }>;
 }
 
-export async function POST(req: NextRequest, ctx: RouteContext): Promise<Response> {
+export async function POST(
+  req: NextRequest,
+  ctx: RouteContext,
+): Promise<Response> {
   const { op } = await ctx.params;
 
   if (!ALLOWED_OPS.has(op)) {
-    return NextResponse.json({ error: `unknown control op: ${op}`, code: "BAD_REQUEST" }, { status: 400 });
+    return NextResponse.json(
+      { error: `unknown control op: ${op}`, code: "BAD_REQUEST" },
+      { status: 400 },
+    );
   }
 
   return proxyToCache(req, {

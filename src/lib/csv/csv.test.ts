@@ -46,7 +46,9 @@ describe("parseCsv", () => {
   });
 
   it("throws on unterminated quoted field", () => {
-    expect(() => parseCsv('a,b\nfoo,"unterminated')).toThrow(/unterminated quoted field/);
+    expect(() => parseCsv('a,b\nfoo,"unterminated')).toThrow(
+      /unterminated quoted field/,
+    );
   });
 
   it("preserves the operator-controlled header order in returned objects", () => {

@@ -1,7 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { ItemEnvelope } from "@/lib/api/keys";
 import { decodeBase64, decodeUtf8 } from "@/lib/value-decode";
@@ -52,13 +58,21 @@ export function KeyDetail({
     return (
       <Card className="border-border/50 bg-card/60">
         <CardHeader>
-          <CardTitle className="font-mono text-base break-all">{keyName}</CardTitle>
+          <CardTitle className="font-mono text-base break-all">
+            {keyName}
+          </CardTitle>
           <CardDescription>
-            Not found. The cache reports no value for this key — store one below to create it.
+            Not found. The cache reports no value for this key — store one below
+            to create it.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <KeyForm clusterId={clusterId} keyName={keyName} initialBody="" onAfterPut={onAfterPut} />
+          <KeyForm
+            clusterId={clusterId}
+            keyName={keyName}
+            initialBody=""
+            onAfterPut={onAfterPut}
+          />
         </CardContent>
       </Card>
     );
@@ -71,20 +85,32 @@ export function KeyDetail({
       <CardHeader className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <CardTitle className="font-mono text-base break-all">{keyName}</CardTitle>
+            <CardTitle className="font-mono text-base break-all">
+              {keyName}
+            </CardTitle>
             <CardDescription className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
               <Metadata label="Version">{envelope.version}</Metadata>
               {envelope.origin && (
-                <Metadata label="Origin" mono>
+                <Metadata
+                  label="Origin"
+                  mono
+                >
                   {envelope.origin}
                 </Metadata>
               )}
               {envelope.ttl_ms !== undefined && envelope.ttl_ms > 0 && (
                 <Metadata label="TTL">{formatTtlMs(envelope.ttl_ms)}</Metadata>
               )}
-              {envelope.expires_at && <Metadata label="Expires">{envelope.expires_at}</Metadata>}
-              {envelope.last_updated && <Metadata label="Updated">{envelope.last_updated}</Metadata>}
-              <Metadata label="Node" mono>
+              {envelope.expires_at && (
+                <Metadata label="Expires">{envelope.expires_at}</Metadata>
+              )}
+              {envelope.last_updated && (
+                <Metadata label="Updated">{envelope.last_updated}</Metadata>
+              )}
+              <Metadata
+                label="Node"
+                mono
+              >
                 {envelope.node}
               </Metadata>
             </CardDescription>
@@ -98,20 +124,33 @@ export function KeyDetail({
             >
               {editing ? (
                 <>
-                  <X aria-hidden className="h-3.5 w-3.5" />
+                  <X
+                    aria-hidden
+                    className="h-3.5 w-3.5"
+                  />
                   Cancel
                 </>
               ) : (
                 <>
-                  <Pencil aria-hidden className="h-3.5 w-3.5" />
+                  <Pencil
+                    aria-hidden
+                    className="h-3.5 w-3.5"
+                  />
                   Edit
                 </>
               )}
             </Button>
-            <DeleteKeyButton clusterId={clusterId} keyName={keyName} onAfterDelete={onAfterDelete} />
+            <DeleteKeyButton
+              clusterId={clusterId}
+              keyName={keyName}
+              onAfterDelete={onAfterDelete}
+            />
           </div>
         </div>
-        <OwnersStrip owners={envelope.owners} node={envelope.node} />
+        <OwnersStrip
+          owners={envelope.owners}
+          node={envelope.node}
+        />
       </CardHeader>
       <Separator className="bg-border/40" />
       <CardContent className="pt-6">
@@ -126,20 +165,33 @@ export function KeyDetail({
             }}
           />
         ) : (
-          <ValueViewer keyName={keyName} base64Value={envelope.value} />
+          <ValueViewer
+            keyName={keyName}
+            base64Value={envelope.value}
+          />
         )}
       </CardContent>
     </Card>
   );
 }
 
-function Metadata({ label, children, mono }: { label: string; children: React.ReactNode; mono?: boolean }) {
+function Metadata({
+  label,
+  children,
+  mono,
+}: {
+  label: string;
+  children: React.ReactNode;
+  mono?: boolean;
+}) {
   return (
     <span className="inline-flex items-center gap-1">
       <span className="text-muted-foreground/70 text-[10px] font-semibold tracking-[0.18em] uppercase">
         {label}
       </span>
-      <span className={mono ? "text-foreground font-mono" : "text-foreground"}>{children}</span>
+      <span className={mono ? "text-foreground font-mono" : "text-foreground"}>
+        {children}
+      </span>
     </span>
   );
 }

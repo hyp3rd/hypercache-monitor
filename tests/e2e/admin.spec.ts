@@ -34,7 +34,9 @@ async function login(page: Page) {
 }
 
 test.describe("admin controls", () => {
-  test("sidebar Administration section renders for admin sessions", async ({ page }) => {
+  test("sidebar Administration section renders for admin sessions", async ({
+    page,
+  }) => {
     await login(page);
 
     // Section header + Controls nav link.
@@ -44,12 +46,20 @@ test.describe("admin controls", () => {
     await expect(page).toHaveURL(/\/admin/);
 
     // The page renders all three cards.
-    await expect(page.getByRole("heading", { name: /trigger eviction/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /trigger expiration/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /clear cluster/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /trigger eviction/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /trigger expiration/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /clear cluster/i }),
+    ).toBeVisible();
   });
 
-  test("Cancel in the confirm dialog dismisses without firing the request", async ({ page }) => {
+  test("Cancel in the confirm dialog dismisses without firing the request", async ({
+    page,
+  }) => {
     await login(page);
     await page.goto("/admin");
 
@@ -83,12 +93,16 @@ test.describe("admin controls", () => {
     expect(requested.filter((r) => r.includes("/mgmt/control/"))).toEqual([]);
   });
 
-  test("Confirming Trigger Eviction POSTs and surfaces a success toast", async ({ page }) => {
+  test("Confirming Trigger Eviction POSTs and surfaces a success toast", async ({
+    page,
+  }) => {
     await login(page);
     await page.goto("/admin");
 
     const responsePromise = page.waitForResponse(
-      (resp) => resp.url().includes("/mgmt/control/evict") && resp.request().method() === "POST",
+      (resp) =>
+        resp.url().includes("/mgmt/control/evict") &&
+        resp.request().method() === "POST",
     );
 
     await page
@@ -108,12 +122,16 @@ test.describe("admin controls", () => {
     await expect(page.getByText(/eviction sweep triggered/i)).toBeVisible();
   });
 
-  test("Confirming Clear cluster POSTs to /clear with admin scope", async ({ page }) => {
+  test("Confirming Clear cluster POSTs to /clear with admin scope", async ({
+    page,
+  }) => {
     await login(page);
     await page.goto("/admin");
 
     const responsePromise = page.waitForResponse(
-      (resp) => resp.url().includes("/mgmt/control/clear") && resp.request().method() === "POST",
+      (resp) =>
+        resp.url().includes("/mgmt/control/clear") &&
+        resp.request().method() === "POST",
     );
 
     await page
@@ -138,7 +156,9 @@ test.describe("admin controls", () => {
 
     // Wait for the page heading so the layout is fully rendered
     // before axe walks the tree.
-    await expect(page.getByRole("heading", { name: /^controls$/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /^controls$/i }),
+    ).toBeVisible();
 
     const axe = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])

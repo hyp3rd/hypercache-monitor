@@ -62,7 +62,10 @@ export async function POST(req: NextRequest): Promise<Response> {
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "missing or invalid token in request body", code: "BAD_REQUEST" },
+      {
+        error: "missing or invalid token in request body",
+        code: "BAD_REQUEST",
+      },
       { status: 400 },
     );
   }
@@ -86,16 +89,25 @@ export async function POST(req: NextRequest): Promise<Response> {
     });
   } catch (err) {
     return NextResponse.json(
-      { error: `cluster unreachable: ${(err as Error).message}`, code: "UPSTREAM_FAILURE" },
+      {
+        error: `cluster unreachable: ${(err as Error).message}`,
+        code: "UPSTREAM_FAILURE",
+      },
       { status: 502 },
     );
   }
 
   if (probe.status === 401) {
-    return NextResponse.json({ error: "invalid token", code: "UNAUTHORIZED" }, { status: 401 });
+    return NextResponse.json(
+      { error: "invalid token", code: "UNAUTHORIZED" },
+      { status: 401 },
+    );
   }
   if (probe.status === 403) {
-    return NextResponse.json({ error: "token has no read scope", code: "FORBIDDEN" }, { status: 403 });
+    return NextResponse.json(
+      { error: "token has no read scope", code: "FORBIDDEN" },
+      { status: 403 },
+    );
   }
   if (probe.status === 404) {
     // Cache is reachable but doesn't expose /v1/me. Operator is
@@ -104,7 +116,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     // (upgrade the cache, or downgrade the monitor) is obvious.
     return NextResponse.json(
       {
-        error: "cluster does not expose GET /v1/me; cache server too old for Phase C2 monitor",
+        error:
+          "cluster does not expose GET /v1/me; cache server too old for Phase C2 monitor",
         code: "UPSTREAM_FAILURE",
       },
       { status: 502 },
@@ -112,7 +125,10 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
   if (!probe.ok) {
     return NextResponse.json(
-      { error: `auth probe failed: HTTP ${probe.status}`, code: "UPSTREAM_FAILURE" },
+      {
+        error: `auth probe failed: HTTP ${probe.status}`,
+        code: "UPSTREAM_FAILURE",
+      },
       { status: 502 },
     );
   }
@@ -151,11 +167,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   session.activeClusterId = clusterId;
   session.sessions = {
     ...(session.sessions ?? {}),
-    [clusterId]: {
-      token: parsed.data.token,
-      identity,
-      scopes,
-    },
+    [clusterId]: { token: parsed.data.token, identity, scopes },
   };
   await session.save();
 

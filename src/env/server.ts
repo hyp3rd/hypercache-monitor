@@ -32,19 +32,26 @@ const schema = z.object({
     .string()
     .url()
     .optional()
-    .describe("Single-cluster fallback: client API base URL (e.g. http://cache:8080)"),
+    .describe(
+      "Single-cluster fallback: client API base URL (e.g. http://cache:8080)",
+    ),
   HYPERCACHE_MGMT_URL: z
     .string()
     .url()
     .optional()
-    .describe("Single-cluster fallback: management HTTP base URL (e.g. http://cache:8081)"),
+    .describe(
+      "Single-cluster fallback: management HTTP base URL (e.g. http://cache:8081)",
+    ),
 
   // iron-session secret for sealing the auth cookie. Must be at
   // least 32 chars per iron-session's own validation. Generate via
   // `openssl rand -base64 48` and ship as a k8s secret.
   IRON_SESSION_SECRET: z
     .string()
-    .min(32, "IRON_SESSION_SECRET must be >=32 chars; generate with `openssl rand -base64 48`"),
+    .min(
+      32,
+      "IRON_SESSION_SECRET must be >=32 chars; generate with `openssl rand -base64 48`",
+    ),
 
   // Cookie name; override only when running multiple instances
   // on the same hostname. Defaults to `hcm_session`.
@@ -52,7 +59,9 @@ const schema = z.object({
 
   // NODE_ENV is set by Next.js itself; we read it for cookie
   // `secure: true` in production and CSRF strictness.
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
 });
 
 // `next build` runs page-data collection by importing every
@@ -81,7 +90,9 @@ function loadEnv(): z.infer<typeof schema> {
     // env is invalid — preferable to a silent runtime auth bypass.
     // The error message lists every failing field by name; values
     // are NOT included (could be a token or secret).
-    const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
+    const issues = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
     throw new Error(`Invalid environment for hypercache-monitor:\n${issues}`);
   }
   return parsed.data;

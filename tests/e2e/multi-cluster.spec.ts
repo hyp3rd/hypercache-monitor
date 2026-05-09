@@ -1,5 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { STUB_IDENTITY_A, STUB_IDENTITY_B, STUB_VALID_TOKEN } from "./fixtures/cache-stub";
+import {
+  STUB_IDENTITY_A,
+  STUB_IDENTITY_B,
+  STUB_VALID_TOKEN,
+} from "./fixtures/cache-stub";
 
 /**
  * Phase C2 multi-cluster end-to-end. Drives the full cross-cluster
@@ -46,45 +50,63 @@ async function loginOnActiveCluster(page: Page) {
 }
 
 test.describe("multi-cluster picker", () => {
-  test("login → switch (NEED_LOGIN) → login other → switch back", async ({ page }) => {
+  test("login → switch (NEED_LOGIN) → login other → switch back", async ({
+    page,
+  }) => {
     // 1. Login on the default cluster.
     await page.goto("/login");
     await loginOnActiveCluster(page);
 
     // Topbar identity reflects stub-A's /v1/me reply.
-    const topbarIdentity = page.locator("header").getByText(STUB_IDENTITY_A, { exact: true });
+    const topbarIdentity = page
+      .locator("header")
+      .getByText(STUB_IDENTITY_A, { exact: true });
     await expect(topbarIdentity).toBeVisible();
 
     // 2. Open the cluster picker. The trigger is the topbar
     //    button that bundles the "Cluster" label + active cluster
     //    name; clicking it opens the dropdown.
-    await page.getByRole("button", { name: /cluster default cluster/i }).click();
+    await page
+      .getByRole("button", { name: /cluster default cluster/i })
+      .click();
 
     // "Secondary cluster" appears as an "Other clusters" entry.
-    const secondaryItem = page.getByRole("menuitem", { name: /secondary cluster/i });
+    const secondaryItem = page.getByRole("menuitem", {
+      name: /secondary cluster/i,
+    });
     await expect(secondaryItem).toBeVisible();
 
     // 3. Click it — no session bound yet → server 401 NEED_LOGIN
     //    → client redirects to /login?cluster=secondary.
     await secondaryItem.click();
-    await expect(page).toHaveURL(/\/login\?cluster=secondary/, { timeout: 5_000 });
+    await expect(page).toHaveURL(/\/login\?cluster=secondary/, {
+      timeout: 5_000,
+    });
 
     // The login form's <Select> should be preselected to
     // "Secondary cluster" thanks to the ?cluster= query param.
-    await expect(page.getByRole("combobox", { name: /cluster/i })).toContainText(/secondary/i);
+    await expect(
+      page.getByRole("combobox", { name: /cluster/i }),
+    ).toContainText(/secondary/i);
 
     // 4. Login on secondary.
     await loginOnActiveCluster(page);
-    const topbarIdentityB = page.locator("header").getByText(STUB_IDENTITY_B, { exact: true });
+    const topbarIdentityB = page
+      .locator("header")
+      .getByText(STUB_IDENTITY_B, { exact: true });
     await expect(topbarIdentityB).toBeVisible();
 
     // 5. Open picker again, switch back to default. Session has
     //    BOTH clusters bound now, so this is an in-place refresh
     //    — no redirect to /login.
-    await page.getByRole("button", { name: /cluster secondary cluster/i }).click();
+    await page
+      .getByRole("button", { name: /cluster secondary cluster/i })
+      .click();
     await page.getByRole("menuitem", { name: /default cluster/i }).click();
     await expect(page).toHaveURL(/\/topology/, { timeout: 5_000 });
-    await expect(page.locator("header").getByText(STUB_IDENTITY_A, { exact: true })).toBeVisible();
+    await expect(
+      page.locator("header").getByText(STUB_IDENTITY_A, { exact: true }),
+    ).toBeVisible();
 
     // The picker is still open here because cluster-picker.tsx
     // calls `e.preventDefault()` on `onSelect` (so the spinner

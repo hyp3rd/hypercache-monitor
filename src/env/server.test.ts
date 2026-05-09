@@ -39,7 +39,9 @@ describe("env/server runtime mode", () => {
     vi.stubEnv("HYPERCACHE_MONITOR_CLUSTERS", "");
     vi.stubEnv("IRON_SESSION_SECRET", "");
 
-    await expect(import("./server")).rejects.toThrow(/Invalid environment for hypercache-monitor/);
+    await expect(import("./server")).rejects.toThrow(
+      /Invalid environment for hypercache-monitor/,
+    );
   });
 
   it("throws when IRON_SESSION_SECRET is too short (zod min(32))", async () => {
@@ -96,6 +98,8 @@ describe("env/server build phase", () => {
     vi.stubEnv("HYPERCACHE_MGMT_URL", "");
     vi.stubEnv("IRON_SESSION_SECRET", "");
 
-    await expect(import("./server")).rejects.toThrow(/Invalid environment for hypercache-monitor/);
+    await expect(import("./server")).rejects.toThrow(
+      /Invalid environment for hypercache-monitor/,
+    );
   });
 });

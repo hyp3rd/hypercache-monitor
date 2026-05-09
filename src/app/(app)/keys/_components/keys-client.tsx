@@ -1,6 +1,12 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchKey, type CacheApiError } from "@/lib/api/keys";
 import { queryKeys } from "@/lib/query/keys";
@@ -23,7 +29,13 @@ import { KeySearch } from "./key-search";
  * form, and delete confirmation — keeping this orchestrator
  * a thin shell.
  */
-export function KeysClient({ clusterId, initialKey }: { clusterId: string; initialKey: string | null }) {
+export function KeysClient({
+  clusterId,
+  initialKey,
+}: {
+  clusterId: string;
+  initialKey: string | null;
+}) {
   const router = useRouter();
   const search = useSearchParams();
   const activeKey = search.get("k") ?? initialKey;
@@ -49,11 +61,16 @@ export function KeysClient({ clusterId, initialKey }: { clusterId: string; initi
           <SectionIcon Icon={KeyRound} />
           <div>
             <CardTitle>Lookup</CardTitle>
-            <CardDescription>Load a key by name. Values are fetched on demand.</CardDescription>
+            <CardDescription>
+              Load a key by name. Values are fetched on demand.
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          <KeySearch initialKey={activeKey ?? ""} onSubmit={setKey} />
+          <KeySearch
+            initialKey={activeKey ?? ""}
+            onSubmit={setKey}
+          />
         </CardContent>
       </Card>
 
@@ -61,7 +78,11 @@ export function KeysClient({ clusterId, initialKey }: { clusterId: string; initi
         {activeKey === null ? (
           <EmptyState />
         ) : (
-          <KeyResolver clusterId={clusterId} keyName={activeKey} onChange={setKey} />
+          <KeyResolver
+            clusterId={clusterId}
+            keyName={activeKey}
+            onChange={setKey}
+          />
         )}
       </div>
     </div>
@@ -101,7 +122,13 @@ function KeyResolver({
   }
 
   if (query.error) {
-    return <ErrorState clusterId={clusterId} keyName={keyName} error={query.error as CacheApiError} />;
+    return (
+      <ErrorState
+        clusterId={clusterId}
+        keyName={keyName}
+        error={query.error as CacheApiError}
+      />
+    );
   }
 
   return (
@@ -120,7 +147,10 @@ function EmptyState() {
     <Card className="border-border/50 bg-card/40 border-dashed">
       <CardContent className="flex flex-col items-center justify-center gap-3 p-12 text-center">
         <span className="bg-brand-muted text-primary ring-primary/30 flex h-12 w-12 items-center justify-center rounded-full ring-1">
-          <Database aria-hidden className="h-5 w-5" />
+          <Database
+            aria-hidden
+            className="h-5 w-5"
+          />
         </span>
         <div>
           <p className="text-foreground text-sm font-medium">No key selected</p>
@@ -145,15 +175,21 @@ function ErrorState({
   return (
     <Card className="border-border/50 bg-card/60">
       <CardHeader>
-        <CardTitle className="font-mono text-base break-all">{keyName}</CardTitle>
-        <CardDescription className="font-mono text-xs">{clusterId}</CardDescription>
+        <CardTitle className="font-mono text-base break-all">
+          {keyName}
+        </CardTitle>
+        <CardDescription className="font-mono text-xs">
+          {clusterId}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <p
           className="bg-destructive/10 text-destructive ring-destructive/20 rounded-md px-3 py-2 text-sm ring-1"
           role="alert"
         >
-          <span className="font-mono text-xs tracking-wider uppercase">{error.code}</span>
+          <span className="font-mono text-xs tracking-wider uppercase">
+            {error.code}
+          </span>
           <span className="ml-2">{error.message}</span>
         </p>
       </CardContent>
@@ -164,7 +200,10 @@ function ErrorState({
 function SectionIcon({ Icon }: { Icon: typeof KeyRound }) {
   return (
     <span className="bg-brand-muted text-primary ring-primary/30 flex h-9 w-9 items-center justify-center rounded-md ring-1">
-      <Icon aria-hidden className="h-4 w-4" />
+      <Icon
+        aria-hidden
+        className="h-4 w-4"
+      />
     </span>
   );
 }

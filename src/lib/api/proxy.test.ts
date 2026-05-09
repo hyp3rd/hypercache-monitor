@@ -26,9 +26,7 @@ import { proxyToCache } from "./proxy";
  * the upstream call shape.
  */
 
-vi.mock("@/lib/auth/session", () => ({
-  activeSession: vi.fn(),
-}));
+vi.mock("@/lib/auth/session", () => ({ activeSession: vi.fn() }));
 
 vi.mock("@/lib/clusters/registry", () => ({
   getCluster: vi.fn(),
@@ -66,7 +64,11 @@ beforeEach(() => {
   // Default happy session — tests override per-case.
   vi.mocked(activeSession).mockResolvedValue({
     clusterId: "default",
-    session: { token: "session-token", identity: "default", scopes: ["read", "write", "admin"] },
+    session: {
+      token: "session-token",
+      identity: "default",
+      scopes: ["read", "write", "admin"],
+    },
   });
   vi.mocked(getCluster).mockReturnValue(baseCluster);
 });
@@ -99,7 +101,10 @@ function makeReq(opts: {
 describe("proxyToCache", () => {
   it("returns 401 when no active session", async () => {
     vi.mocked(activeSession).mockResolvedValueOnce(null);
-    const res = await proxyToCache(makeReq({}), { target: "mgmt", path: "/cluster/members" });
+    const res = await proxyToCache(makeReq({}), {
+      target: "mgmt",
+      path: "/cluster/members",
+    });
     expect(res.status).toBe(401);
     const body = (await res.json()) as { code: string };
     expect(body.code).toBe("UNAUTHORIZED");
@@ -123,10 +128,7 @@ describe("proxyToCache", () => {
 
   it("returns 403 CSRF when Sec-Fetch-Site reports a cross-site request", async () => {
     const res = await proxyToCache(
-      makeReq({
-        method: "POST",
-        headers: { "sec-fetch-site": "cross-site" },
-      }),
+      makeReq({ method: "POST", headers: { "sec-fetch-site": "cross-site" } }),
       { target: "api", path: "/v1/cache/k" },
     );
     expect(res.status).toBe(403);
@@ -136,10 +138,7 @@ describe("proxyToCache", () => {
 
   it("returns 403 CSRF when Sec-Fetch-Site reports a same-site (different-origin) request", async () => {
     const res = await proxyToCache(
-      makeReq({
-        method: "POST",
-        headers: { "sec-fetch-site": "same-site" },
-      }),
+      makeReq({ method: "POST", headers: { "sec-fetch-site": "same-site" } }),
       { target: "api", path: "/v1/cache/k" },
     );
     expect(res.status).toBe(403);
@@ -150,10 +149,7 @@ describe("proxyToCache", () => {
   it("permits mutating verbs when Sec-Fetch-Site is same-origin", async () => {
     fetchMock.mockResolvedValueOnce(new Response("[]", { status: 200 }));
     const res = await proxyToCache(
-      makeReq({
-        method: "POST",
-        headers: { "sec-fetch-site": "same-origin" },
-      }),
+      makeReq({ method: "POST", headers: { "sec-fetch-site": "same-origin" } }),
       { target: "api", path: "/v1/cache/k" },
     );
     expect(res.status).toBe(200);
@@ -167,10 +163,7 @@ describe("proxyToCache", () => {
     const res = await proxyToCache(
       makeReq({
         method: "POST",
-        headers: {
-          origin: "http://attacker.example",
-          host: "localhost:3000",
-        },
+        headers: { origin: "http://attacker.example", host: "localhost:3000" },
       }),
       { target: "api", path: "/v1/cache/k" },
     );
@@ -181,7 +174,10 @@ describe("proxyToCache", () => {
 
   it("forwards GETs upstream with bearer + X-Request-Id and strips Cookie/Host", async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
+      new Response("[]", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
     );
 
     const res = await proxyToCache(
@@ -211,24 +207,30 @@ describe("proxyToCache", () => {
 
   it("preserves caller-supplied X-Request-Id rather than generating a new one", async () => {
     fetchMock.mockResolvedValueOnce(new Response("[]", { status: 200 }));
-    await proxyToCache(makeReq({ headers: { "x-request-id": "trace-abc-123" } }), {
-      target: "mgmt",
-      path: "/health",
-    });
+    await proxyToCache(
+      makeReq({ headers: { "x-request-id": "trace-abc-123" } }),
+      { target: "mgmt", path: "/health" },
+    );
     const sentHeaders = fetchMock.mock.calls[0]?.[1]?.headers as Headers;
     expect(sentHeaders.get("x-request-id")).toBe("trace-abc-123");
   });
 
   it("surfaces 502 UPSTREAM_FAILURE when fetch throws", async () => {
     fetchMock.mockRejectedValueOnce(new Error("ECONNREFUSED"));
-    const res = await proxyToCache(makeReq({}), { target: "mgmt", path: "/cluster/members" });
+    const res = await proxyToCache(makeReq({}), {
+      target: "mgmt",
+      path: "/cluster/members",
+    });
     expect(res.status).toBe(502);
     expect((await res.json()).code).toBe("UPSTREAM_FAILURE");
   });
 
   it("returns 500 CLUSTER_GONE when registry resolves to undefined", async () => {
     vi.mocked(getCluster).mockReturnValueOnce(undefined);
-    const res = await proxyToCache(makeReq({}), { target: "mgmt", path: "/cluster/members" });
+    const res = await proxyToCache(makeReq({}), {
+      target: "mgmt",
+      path: "/cluster/members",
+    });
     expect(res.status).toBe(500);
     expect((await res.json()).code).toBe("CLUSTER_GONE");
     expect(fetchMock).not.toHaveBeenCalled();
@@ -237,19 +239,25 @@ describe("proxyToCache", () => {
   it("targets the api base URL when target=api, mgmt base URL when target=mgmt", async () => {
     fetchMock.mockResolvedValueOnce(new Response("[]", { status: 200 }));
     await proxyToCache(makeReq({}), { target: "api", path: "/v1/cache/k" });
-    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("http://cache:8080/v1/cache/k");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "http://cache:8080/v1/cache/k",
+    );
 
     fetchMock.mockResolvedValueOnce(new Response("[]", { status: 200 }));
     await proxyToCache(makeReq({}), { target: "mgmt", path: "/stats" });
-    expect(String(fetchMock.mock.calls[1]?.[0])).toBe("http://cache:8081/stats");
+    expect(String(fetchMock.mock.calls[1]?.[0])).toBe(
+      "http://cache:8081/stats",
+    );
   });
 
   it("propagates query strings from the inbound request to upstream", async () => {
     fetchMock.mockResolvedValueOnce(new Response("[]", { status: 200 }));
-    await proxyToCache(makeReq({ path: "/api/clusters/default/mgmt/dist/owners?key=foo&limit=10" }), {
-      target: "mgmt",
-      path: "/dist/owners",
-    });
+    await proxyToCache(
+      makeReq({
+        path: "/api/clusters/default/mgmt/dist/owners?key=foo&limit=10",
+      }),
+      { target: "mgmt", path: "/dist/owners" },
+    );
     const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
     expect(url.searchParams.get("key")).toBe("foo");
     expect(url.searchParams.get("limit")).toBe("10");

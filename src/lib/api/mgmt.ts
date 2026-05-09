@@ -18,7 +18,12 @@ import { z } from "zod";
  * Phase B but unused here.
  */
 
-export const memberStateSchema = z.enum(["alive", "suspect", "dead", "draining"]);
+export const memberStateSchema = z.enum([
+  "alive",
+  "suspect",
+  "dead",
+  "draining",
+]);
 export type MemberState = z.infer<typeof memberStateSchema>;
 
 // Wire field names are PascalCase because the cache's
@@ -59,13 +64,13 @@ export type ClusterMembers = z.infer<typeof clusterMembersSchema>;
 export const vnodeSchema = z.string().transform((s, ctx) => {
   const idx = s.lastIndexOf(":");
   if (idx < 0) {
-    ctx.addIssue({ code: "custom", message: `vnode missing ":" separator: ${s}` });
+    ctx.addIssue({
+      code: "custom",
+      message: `vnode missing ":" separator: ${s}`,
+    });
     return z.NEVER;
   }
-  return {
-    hash: s.slice(0, idx),
-    ownerId: s.slice(idx + 1),
-  };
+  return { hash: s.slice(0, idx), ownerId: s.slice(idx + 1) };
 });
 export type Vnode = z.infer<typeof vnodeSchema>;
 
@@ -94,10 +99,7 @@ export const heartbeatSchema = z
   .passthrough();
 export type Heartbeat = z.infer<typeof heartbeatSchema>;
 
-const errorEnvelope = z.object({
-  error: z.string(),
-  code: z.string(),
-});
+const errorEnvelope = z.object({ error: z.string(), code: z.string() });
 
 /**
  * proxiedMgmt builds the URL path the proxy expects: every
@@ -135,7 +137,10 @@ export async function fetchMgmt<T>(
     const body = await response.json().catch(() => ({}));
     const env = errorEnvelope.safeParse(body);
     const message = env.success ? env.data.error : `HTTP ${response.status}`;
-    const err = new Error(message) as Error & { status?: number; code?: string };
+    const err = new Error(message) as Error & {
+      status?: number;
+      code?: string;
+    };
     err.status = response.status;
     if (env.success) err.code = env.data.code;
     throw err;
@@ -144,7 +149,9 @@ export async function fetchMgmt<T>(
   const json = await response.json();
   const parsed = schema.safeParse(json);
   if (!parsed.success) {
-    throw new Error(`mgmt response shape mismatch at ${path}: ${parsed.error.message}`);
+    throw new Error(
+      `mgmt response shape mismatch at ${path}: ${parsed.error.message}`,
+    );
   }
   return parsed.data;
 }

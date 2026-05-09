@@ -56,9 +56,15 @@ export function toHexDump(bytes: Uint8Array): string {
   const rows: string[] = [];
   for (let offset = 0; offset < bytes.length; offset += 16) {
     const slice = bytes.subarray(offset, offset + 16);
-    const hex = Array.from(slice, (b) => b.toString(16).padStart(2, "0")).join(" ");
-    const ascii = Array.from(slice, (b) => (b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : ".")).join("");
-    rows.push(`${offset.toString(16).padStart(8, "0")}  ${hex.padEnd(47)}  ${ascii}`);
+    const hex = Array.from(slice, (b) => b.toString(16).padStart(2, "0")).join(
+      " ",
+    );
+    const ascii = Array.from(slice, (b) =>
+      b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : ".",
+    ).join("");
+    rows.push(
+      `${offset.toString(16).padStart(8, "0")}  ${hex.padEnd(47)}  ${ascii}`,
+    );
   }
   return rows.join("\n");
 }
@@ -70,7 +76,10 @@ export function toHexDump(bytes: Uint8Array): string {
  * the browser doesn't try to render a possibly-malicious
  * payload inline.
  */
-export function bytesToBlob(bytes: Uint8Array, type = "application/octet-stream"): Blob {
+export function bytesToBlob(
+  bytes: Uint8Array,
+  type = "application/octet-stream",
+): Blob {
   // Copy into a fresh ArrayBuffer (slice() preserves the
   // bytes but returns a plain ArrayBuffer rather than the
   // ArrayBufferLike union). Without the copy, TypeScript

@@ -31,7 +31,11 @@ const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 export function ThemeToggle() {
-  const hydrated = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
+  const hydrated = useSyncExternalStore(
+    subscribe,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
   const { resolvedTheme, setTheme } = useTheme();
 
   // Pre-hydration placeholder: same `<button>` shape as the
@@ -40,7 +44,13 @@ export function ThemeToggle() {
   // the button is not yet interactive.
   if (!hydrated) {
     return (
-      <Button variant="ghost" size="icon" aria-hidden disabled className="opacity-0">
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-hidden
+        disabled
+        className="opacity-0"
+      >
         <span className="h-4 w-4" />
       </Button>
     );
@@ -54,7 +64,17 @@ export function ThemeToggle() {
       onClick={() => setTheme(dark ? "light" : "dark")}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {dark ? <Sun aria-hidden className="h-4 w-4" /> : <Moon aria-hidden className="h-4 w-4" />}
+      {dark ? (
+        <Sun
+          aria-hidden
+          className="h-4 w-4"
+        />
+      ) : (
+        <Moon
+          aria-hidden
+          className="h-4 w-4"
+        />
+      )}
     </Button>
   );
 }

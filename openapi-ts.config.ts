@@ -23,7 +23,9 @@ import { defineConfig } from "@hey-api/openapi-ts";
  * any diff — that's the drift signal.
  */
 export default defineConfig({
-  input: process.env["OPENAPI_INPUT"] ?? "../hypercache/cmd/hypercache-server/openapi.yaml",
+  input:
+    process.env["OPENAPI_INPUT"] ??
+    "../hypercache/cmd/hypercache-server/openapi.yaml",
   output: {
     path: "src/lib/api/generated",
     // postProcess replaces the deprecated `format`/`lint` knobs.
@@ -37,10 +39,7 @@ export default defineConfig({
   plugins: [
     "@hey-api/client-fetch",
     "@tanstack/react-query",
-    {
-      name: "@hey-api/typescript",
-      enums: "javascript",
-    },
+    { name: "@hey-api/typescript", enums: "javascript" },
     {
       name: "@hey-api/sdk",
       // `byTags` groups generated SDK functions under their
