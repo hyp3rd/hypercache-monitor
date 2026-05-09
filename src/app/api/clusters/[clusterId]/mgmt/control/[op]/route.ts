@@ -8,19 +8,32 @@ import { NextResponse } from "next/server";
  *   POST /trigger-expiration
  *   POST /clear
  *
- * Phase A: this surface is **unconditionally 501**. The route
- * exists so the URL is stable from day one (the UI components
- * already reference these paths), but the cache server doesn't
- * yet enforce admin scope on these routes (Phase C ships that
- * upstream). Until then, the UI must NOT light up these
- * actions — a typo'd Read-only token would otherwise be able
- * to clear a production cluster through a vulnerable proxy
- * shape.
+ * Phase C2: this surface is now LIVE. Previous Phase A behavior
+ * was an unconditional 501 because the cache server didn't enforce
+ * admin scope on the upstream mgmt port — a typo'd Read-only token
+ * would otherwise have been able to clear a production cluster
+ * through a vulnerable proxy shape.
  *
- * When Phase C lands (cache enforces ScopeAdmin via
- * WithMgmtAuth), flip this route to use
- * `proxyToCache(req, { target: "mgmt", path, requiredScope: "admin" })`
- * and add the matching shadcn Eviction Controls page.
+ * What changed:
+ *
+ *   1. Cache mgmt port (`management_http.go`) now exposes
+ *      `WithMgmtControlAuth`, wired in the binary's `main.go` to
+ *      `httpauth.Policy.Verify(c, ScopeAdmin)`. Server-side
+ *      enforcement is real.
+ *   2. Monitor's login flow (Phase C2.1) seals the operator's
+ *      REAL scopes from `GET /v1/me` — no more optimistic three-
+ *      scope grants. The `requiredScope: "admin"` check in
+ *      `proxyToCache` 403s before the request leaves the monitor.
+ *   3. `HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS` env gate has been
+ *      retired. It was a defense-in-depth belt while the cache
+ *      side was unenforced; with both ends checking admin scope
+ *      it's belt-and-suspenders we don't need.
+ *
+ * Forward-compat: a pre-Phase-C2 cache binary returns 401/403/200
+ * (no admin enforcement at all), which the proxy still funnels
+ * through the requiredScope check on the monitor side. So a
+ * mismatched-version cache → admin operator pair still works
+ * safely; only the deeper defense layer is missing.
  */
 
 const ALLOWED_OPS = new Set(["evict", "trigger-expiration", "clear"]);
@@ -36,20 +49,6 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<Respons
     return NextResponse.json({ error: `unknown control op: ${op}`, code: "BAD_REQUEST" }, { status: 400 });
   }
 
-  // Phase A: 501. See module doc for rationale.
-  if (process.env["HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS"] !== "true") {
-    return NextResponse.json(
-      {
-        error:
-          "admin operations disabled in this build; cache must enforce ScopeAdmin (Phase C) before this UI surface lights up",
-        code: "NOT_IMPLEMENTED",
-      },
-      { status: 501 },
-    );
-  }
-
-  // Reached only when an operator has explicitly opted in via
-  // env var AND the session has admin scope (proxy enforces it).
   return proxyToCache(req, {
     target: "mgmt",
     path: `/${op}`,

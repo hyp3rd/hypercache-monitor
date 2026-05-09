@@ -7,6 +7,66 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 The version label visible in the app's sidebar footer is the
 authoritative current version.
 
+## [0.8.0] — Phase C: Eviction Controls UI
+
+The cluster-mutating control surface — evict, trigger-expiration,
+clear — is now LIVE. Phase A's unconditional 501 gate has been
+retired in favor of real per-end enforcement: cache-side admin
+scope on the mgmt port (cache repo) and monitor-side
+session-scope check (post-C2 sealed real scopes from `/v1/me`).
+Minor-bump because the control endpoints transition from
+"shipped + dark" to "shipped + lit" — same surface, behavior change.
+
+### Added
+
+- **`/admin` page** with three destructive controls — Trigger
+  Eviction, Trigger Expiration, Clear cluster. Each wraps a
+  shadcn `<AlertDialog>` confirm with a per-control body that
+  conveys reversibility (sweeps reclaim by policy; Clear is
+  irreversible). Card colour: amber for sweeps, destructive-red
+  for Clear. Sonner toast on success / failure.
+- **Sidebar "Administration" section** in `src/app/(app)/layout.tsx`,
+  conditionally rendered when `auth.session.scopes.includes("admin")`.
+  Hidden ≠ secure: the page does its own scope check and the
+  proxy enforces admin on every POST regardless of what the
+  sidebar shows.
+- **E2E coverage** in `tests/e2e/admin.spec.ts`: Cancel-without-fetch,
+  Trigger Eviction (POST `/evict` returns 202), Clear cluster
+  (POST `/clear` returns 200, with the irreversibility warning
+  visible in the dialog), and an axe-clean closed-state scan.
+
+### Changed
+
+- **`src/app/api/clusters/[clusterId]/mgmt/control/[op]/route.ts`** —
+  the unconditional 501 + `HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS`
+  env gate is **gone**. The route now forwards every allowed op
+  to `proxyToCache(req, { target: "mgmt", path, requiredScope:
+"admin" })`, relying on the post-C2 sealed real scopes plus
+  the cache-side `WithMgmtControlAuth` enforcement (cache CHANGELOG).
+- **`HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS` env var retired.** It
+  was a defense-in-depth belt while the cache mgmt port had no
+  server-side enforcement. With both ends now checking admin
+  scope it's belt-and-suspenders we don't need. Operators
+  setting it in their k8s manifests can drop it; reading the
+  variable does nothing now.
+- **Cache stub extended** (`tests/e2e/fixtures/cache-stub.ts`)
+  with `/evict`, `/trigger-expiration`, `/clear` handlers
+  matching the production binary's response shapes (202 for
+  fire-and-forget, 200 for `/clear`).
+
+### Notes
+
+- The cache repo's matching `WithMgmtControlAuth` work landed in
+  its own CHANGELOG entry; deploying this monitor against a
+  pre-Phase-C2 cache binary is safe (the proxy's session-scope
+  check 403s read-only operators before fetch) but loses the
+  cache-side defense layer. Operators should upgrade both.
+- Per-cluster logout still out of scope.
+- Server-rendered scope check on `/admin` page returns a clean
+  "insufficient scope" panel rather than redirecting — operators
+  who land here from a deep link see what's missing without
+  silent bounces.
+
 ## [0.7.1] — Phase C2: Real identity, hostname defaults, live reload
 
 Closes the four items deferred from C1. Single-cluster deployments

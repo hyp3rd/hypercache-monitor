@@ -4,6 +4,7 @@ Acks
 cmdk
 codegen
 Colada
+colour
 dlitem
 execve
 Fanout
