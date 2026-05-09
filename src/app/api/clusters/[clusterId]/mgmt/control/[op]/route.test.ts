@@ -3,20 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 /**
- * Admin-gated control route tests.
+ * Phase C2 admin-gated control route tests.
  *
- * Phase A's posture: every control op (evict, clear,
- * trigger-expiration) returns 501 unless the operator
- * explicitly opts in via `HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS=true`
- * AND has the admin scope on their session. The 501 is the
- * defense-in-depth gate against the cache server not yet
- * enforcing admin scope on the upstream mgmt port.
+ * Behavior the proxy guarantees:
+ *   - 400 BAD_REQUEST on unknown op names (catch typos before
+ *     they hit the upstream cache).
+ *   - 403 FORBIDDEN when the session lacks admin scope (proxy's
+ *     `requiredScope: "admin"` check; never reaches fetch).
+ *   - Forwards to mgmt port `/<op>` with the operator's bearer
+ *     when admin scope is present.
  *
- * Tests cover:
- *   - 400 on unknown op names
- *   - 501 when env opt-in is missing (default Phase A posture)
- *   - 403 when env opt-in is set but session lacks admin
- *     (proxy's requiredScope kicks in before fetch)
+ * Phase C1's `HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS` env gate has
+ * been retired (defense-in-depth belt that's no longer needed:
+ * cache enforces admin-scope server-side; monitor enforces it
+ * client-side via the post-C2 sealed real scopes from /v1/me).
  */
 
 vi.mock("@/lib/auth/session", () => ({
@@ -43,7 +43,6 @@ const cluster = {
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
-  vi.unstubAllEnvs();
   fetchMock.mockReset();
   vi.mocked(activeSession).mockReset();
   vi.mocked(getCluster).mockReset();
@@ -52,7 +51,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  vi.unstubAllEnvs();
 });
 
 function makeReq(): NextRequest {
@@ -70,60 +68,78 @@ function makeCtx(op: string): { params: Promise<{ clusterId: string; op: string 
 }
 
 describe("POST /api/clusters/[clusterId]/mgmt/control/[op]", () => {
-  it("returns 400 + BAD_REQUEST for unknown ops", async () => {
-    vi.mocked(activeSession).mockResolvedValueOnce({
-      clusterId: "default",
-      session: { token: "tok", identity: "ops", scopes: ["admin"] },
-    });
+  it("returns 400 + BAD_REQUEST for unknown ops (caught before scope check)", async () => {
+    // No activeSession mock needed — the unknown-op guard runs
+    // before proxyToCache, so the session is never consulted.
     const res = await POST(makeReq(), makeCtx("nuke-from-orbit"));
     expect(res.status).toBe(400);
     expect((await res.json()).code).toBe("BAD_REQUEST");
-  });
-
-  it("returns 501 + NOT_IMPLEMENTED when admin-ops env opt-in is missing", async () => {
-    vi.mocked(activeSession).mockResolvedValueOnce({
-      clusterId: "default",
-      session: { token: "tok", identity: "ops", scopes: ["admin"] },
-    });
-    // Default state: env var unset
-    const res = await POST(makeReq(), makeCtx("evict"));
-    expect(res.status).toBe(501);
-    expect((await res.json()).code).toBe("NOT_IMPLEMENTED");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("returns 501 even when env is set to a non-true value", async () => {
-    vi.mocked(activeSession).mockResolvedValueOnce({
-      clusterId: "default",
-      session: { token: "tok", identity: "ops", scopes: ["admin"] },
-    });
-    vi.stubEnv("HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS", "1"); // not "true"
-    const res = await POST(makeReq(), makeCtx("evict"));
-    expect(res.status).toBe(501);
-  });
-
-  it("returns 403 FORBIDDEN when env is opt-in but session lacks admin scope", async () => {
+  it("returns 403 FORBIDDEN when the session lacks admin scope", async () => {
     vi.mocked(activeSession).mockResolvedValueOnce({
       clusterId: "default",
       session: { token: "tok", identity: "ro", scopes: ["read"] },
     });
-    vi.stubEnv("HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS", "true");
     const res = await POST(makeReq(), makeCtx("evict"));
     expect(res.status).toBe(403);
     expect((await res.json()).code).toBe("FORBIDDEN");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("forwards to upstream when env is opt-in AND session has admin scope", async () => {
+  it("returns 403 FORBIDDEN even when the session has read+write but not admin", async () => {
+    // Pins the inclusive (non-hierarchical) scope semantics:
+    // ScopeWrite alone does NOT imply ScopeAdmin. A token granted
+    // read+write scope still cannot evict.
+    vi.mocked(activeSession).mockResolvedValueOnce({
+      clusterId: "default",
+      session: { token: "tok", identity: "rw", scopes: ["read", "write"] },
+    });
+    const res = await POST(makeReq(), makeCtx("clear"));
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("FORBIDDEN");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("forwards /evict to the mgmt port when the session has admin scope", async () => {
+    vi.mocked(activeSession).mockResolvedValueOnce({
+      clusterId: "default",
+      session: { token: "tok", identity: "ops", scopes: ["read", "write", "admin"] },
+    });
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 202 }));
+
+    const res = await POST(makeReq(), makeCtx("evict"));
+    expect(res.status).toBe(202);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("http://cache:8081/evict");
+    // Bearer token forwarded — operator's identity travels to the cache
+    // for any audit attribution the cache wires up later.
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const headers = new Headers(init.headers);
+    expect(headers.get("authorization")).toBe("Bearer tok");
+  });
+
+  it("forwards /clear and /trigger-expiration with admin scope", async () => {
+    for (const op of ["clear", "trigger-expiration"]) {
+      vi.mocked(activeSession).mockResolvedValueOnce({
+        clusterId: "default",
+        session: { token: "tok", identity: "ops", scopes: ["admin"] },
+      });
+      fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+      const res = await POST(makeReq(), makeCtx(op));
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`http://cache:8081/${op}`);
+    }
+  });
+
+  it("surfaces upstream 502 when the cache mgmt port is unreachable", async () => {
     vi.mocked(activeSession).mockResolvedValueOnce({
       clusterId: "default",
       session: { token: "tok", identity: "ops", scopes: ["admin"] },
     });
-    vi.stubEnv("HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS", "true");
-    fetchMock.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+    fetchMock.mockRejectedValueOnce(new Error("ECONNREFUSED"));
     const res = await POST(makeReq(), makeCtx("evict"));
-    expect(res.status).toBe(200);
-    expect(fetchMock).toHaveBeenCalledOnce();
-    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("http://cache:8081/evict");
+    expect(res.status).toBe(502);
   });
 });

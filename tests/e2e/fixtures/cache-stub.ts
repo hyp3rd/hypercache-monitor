@@ -176,6 +176,27 @@ function handle(req: IncomingMessage, res: ServerResponse, identity: string): vo
     return;
   }
 
+  // Phase C2 admin controls. The monitor's proxy already gates
+  // these on session admin-scope client-side; we mirror the cache
+  // binary's response shapes so the UI sees the right status:
+  //   /evict + /trigger-expiration → 202 Accepted (fire-and-forget)
+  //   /clear                       → 200 OK
+  // No body in any of the three — same as the production binary.
+  if (req.method === "POST") {
+    if (url.pathname === "/evict" || url.pathname === "/trigger-expiration") {
+      keyStore.clear();
+      res.writeHead(202);
+      res.end();
+      return;
+    }
+    if (url.pathname === "/clear") {
+      keyStore.clear();
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+  }
+
   const fixture = FIXTURES[url.pathname];
   if (fixture === undefined) {
     res.writeHead(404, { "content-type": "application/json" });

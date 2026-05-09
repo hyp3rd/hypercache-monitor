@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { activeSession } from "@/lib/auth/session";
 import { listClusters } from "@/lib/clusters/registry";
 import type { ReactNode } from "react";
-import { BarChart3, Database, FileCode2, Layers, Network, ShieldCheck } from "lucide-react";
+import { BarChart3, Database, FileCode2, Layers, Network, ShieldCheck, Wrench } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -23,6 +23,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const clusters = listClusters().map((c) => ({ id: c.id, name: c.name }));
+  // Phase C2: the "Administration" sidebar entry is hidden when the
+  // session lacks admin scope. This is purely UX — the /admin page
+  // does its own scope check, and the proxy enforces admin on every
+  // POST regardless of what's rendered. Hidden ≠ secure.
+  const hasAdmin = auth.session.scopes.includes("admin");
 
   return (
     <div className="bg-background flex min-h-screen">
@@ -49,6 +54,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <NavLink href="/bulk" icon={<Layers aria-hidden className="h-4 w-4" />}>
             Bulk operations
           </NavLink>
+          {hasAdmin && (
+            <>
+              <div className="mt-2" />
+              <NavSection label="Administration" />
+              <NavLink href="/admin" icon={<Wrench aria-hidden className="h-4 w-4" />}>
+                Controls
+              </NavLink>
+            </>
+          )}
           <div className="mt-2" />
           <NavSection label="Reference" />
           <NavLink href="/auth-info" icon={<ShieldCheck aria-hidden className="h-4 w-4" />}>
@@ -59,8 +73,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.7.1 · Phase C2 — Multi-cluster</p>
-          <p className="mt-1">/v1/me identity, hostname defaults, live YAML reload, cross-cluster E2E.</p>
+          <p className="font-mono">v0.8.0 · Phase C — Eviction Controls</p>
+          <p className="mt-1">Admin-scoped /evict, /clear, /trigger-expiration with confirm dialogs.</p>
         </div>
       </aside>
 
