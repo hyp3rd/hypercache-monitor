@@ -95,4 +95,37 @@ test.describe("topology surface", () => {
     await page.getByRole("button", { name: /sign out/i }).click();
     await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
   });
+
+  test("topology subscribes to SSE for live updates", async ({ page }) => {
+    // Capture every cluster-events SSE request so we can assert
+    // the EventSource opened against the cluster-aware proxy URL.
+    // A retry storm or a missing subscription would surface as
+    // a count != 1 here.
+    const sseRequests: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/mgmt/cluster/events")) {
+        sseRequests.push(`${req.method()} ${req.url()}`);
+      }
+    });
+
+    await page.goto("/login");
+    await page.getByLabel("Token").fill(STUB_VALID_TOKEN);
+    await page.getByRole("button", { name: /sign in/i }).click();
+    await expect(page).toHaveURL(/\/topology/, { timeout: 10_000 });
+
+    // Members table renders — confirms the page hydrated; SSE
+    // opens fire-on-mount of TopologyClient.
+    await expect(page.getByRole("table")).toBeVisible();
+
+    // Wait briefly for the EventSource to open (Playwright's
+    // request capture is synchronous on the main thread but
+    // hydration may queue the EventSource construction).
+    await expect
+      .poll(() => sseRequests.length, { timeout: 5_000 })
+      .toBeGreaterThanOrEqual(1);
+
+    expect(sseRequests[0]).toMatch(
+      /GET .*\/api\/clusters\/default\/mgmt\/cluster\/events/,
+    );
+  });
 });

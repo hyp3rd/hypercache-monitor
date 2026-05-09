@@ -144,10 +144,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.8.0 · Phase C — Eviction Controls</p>
+          <p className="font-mono">v0.9.0 · Phase C — SSE live topology</p>
           <p className="mt-1">
-            Admin-scoped /evict, /clear, /trigger-expiration with confirm
-            dialogs.
+            Live `members` + `heartbeat` events; polling fallback on disconnect.
           </p>
         </div>
       </aside>
