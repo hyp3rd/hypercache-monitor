@@ -1,0 +1,12 @@
+---
+# Cluster registry consumed by the Monitor at boot
+# (HYPERCACHE_MONITOR_CLUSTERS=/app/clusters.yaml in the compose).
+#
+# One logical cluster pointing at hypercache-1 — the cluster's
+# internal ring routes any request to the right owner regardless of
+# which node the monitor talks to first. Use docker-network DNS
+# names; "hypercache-1" resolves inside the compose network.
+default:
+  name: "Local cluster (OIDC example)"
+  apiBaseUrl: "http://hypercache-1:8080"
+  mgmtBaseUrl: "http://hypercache-1:8081"

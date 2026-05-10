@@ -1,0 +1,213 @@
+---
+# Self-contained OIDC example. Brings up:
+#
+#   - Keycloak IdP with the hypercache realm pre-imported
+#   - 5-node HyperCache cluster (built from the sibling `../../../hypercache`
+#     cache repo) with OIDC verification enabled alongside the static-
+#     bearer flow
+#   - Next.js Monitor (image pre-built by `make start-oidc`) with the
+#     OIDC sign-in button rendered on /login
+#
+# Run via the Make target — `make start-oidc` from the monitor repo
+# root — which encapsulates the prerequisites (sibling cache repo,
+# /etc/hosts entry warning, monitor image build):
+#
+#   make start-oidc
+#
+# Or directly:
+#
+#   docker compose -f docker-compose.yml --project-name hypercache-oidc up -d
+#
+# Why we don't `-f`-merge with the cache repo's docker-compose.cluster.yml:
+# Docker Compose resolves all relative paths against the FIRST -f file's
+# directory, which means `./keycloak/realm.json` from this overlay would
+# silently bind-mount from the cache repo's tree (where it doesn't exist)
+# rather than from this overlay's. The duplication of the 5 cache-node
+# definitions below is the pragmatic cost of keeping this example a
+# single-file, single-command stack.
+#
+# Hostname requirement: add `127.0.0.1 keycloak` to your host /etc/hosts
+# so the browser-side OIDC redirect resolves to the same Keycloak the
+# cache containers reach via Docker DNS. Without it, auth.js shows
+# `?error=Configuration` after clicking the sign-in button. See the
+# README in this directory for the full walkthrough.
+
+x-hypercache-base: &hypercache-base
+  build:
+    context: ../../../hypercache
+    dockerfile: cmd/hypercache-server/Dockerfile
+  image: hypercache-server:oidc-example
+  restart: unless-stopped
+  environment: &hypercache-base-env
+    HYPERCACHE_API_ADDR: ":8080"
+    HYPERCACHE_MGMT_ADDR: ":8081"
+    HYPERCACHE_REPLICATION: "3"
+    HYPERCACHE_CAPACITY: "100000"
+    # Hybrid coexistence: a static dev token AND OIDC. The cache's
+    # resolve chain matches the static token first; unmatched
+    # bearers fall through to the OIDC verifier. Both paths
+    # produce the same Identity shape downstream.
+    HYPERCACHE_AUTH_TOKEN: "dev-token"
+    HYPERCACHE_OIDC_ISSUER: "http://keycloak:8080/realms/hypercache"
+    HYPERCACHE_OIDC_AUDIENCE: "hypercache-monitor"
+    HYPERCACHE_OIDC_SCOPE_CLAIM: "cache_scopes"
+    HYPERCACHE_OIDC_IDENTITY_CLAIM: "email"
+    HYPERCACHE_LOG_LEVEL: "info"
+    HYPERCACHE_HEARTBEAT: "1s"
+    HYPERCACHE_INDIRECT_PROBE_K: "2"
+    HYPERCACHE_HINT_TTL: "30s"
+    HYPERCACHE_HINT_REPLAY: "200ms"
+    HYPERCACHE_REBALANCE_INTERVAL: "250ms"
+  depends_on:
+    keycloak:
+      condition: service_healthy
+  networks:
+    - hypercache
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: hypercache-keycloak
+    hostname: keycloak
+    # `start-dev` is the documented dev command (no DB, in-memory H2).
+    # `--import-realm` reads every JSON in /opt/keycloak/data/import
+    # at boot. Production deployments should switch to
+    # `start --optimized` with a real database and TLS.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Pin the issuer URL so it matches both the browser-visible
+      # /etc/hosts mapping and the docker-DNS-visible service name
+      # — same string from both sides, which is what `iss` claim
+      # validation requires.
+      KC_HOSTNAME: http://keycloak:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
+      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      # /health/ready on Keycloak's management interface. Shell-only
+      # probe — the keycloak image doesn't ship curl/wget. The TCP
+      # block reads /health/ready and greps for the UP status.
+      test:
+        - "CMD-SHELL"
+        - "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - hypercache
+
+  hypercache-1:
+    <<: *hypercache-base
+    container_name: hypercache-1
+    hostname: hypercache-1
+    ports:
+      - "8081:8080"
+      - "9081:8081"
+    environment:
+      <<: *hypercache-base-env
+      HYPERCACHE_NODE_ID: "node-1"
+      HYPERCACHE_DIST_ADDR: "hypercache-1:7946"
+      HYPERCACHE_SEEDS: "node-2@hypercache-2:7946,node-3@hypercache-3:7946,node-4@hypercache-4:7946,node-5@hypercache-5:7946"
+
+  hypercache-2:
+    <<: *hypercache-base
+    container_name: hypercache-2
+    hostname: hypercache-2
+    ports:
+      - "8082:8080"
+      - "9082:8081"
+    environment:
+      <<: *hypercache-base-env
+      HYPERCACHE_NODE_ID: "node-2"
+      HYPERCACHE_DIST_ADDR: "hypercache-2:7946"
+      HYPERCACHE_SEEDS: "node-1@hypercache-1:7946,node-3@hypercache-3:7946,node-4@hypercache-4:7946,node-5@hypercache-5:7946"
+
+  hypercache-3:
+    <<: *hypercache-base
+    container_name: hypercache-3
+    hostname: hypercache-3
+    ports:
+      - "8083:8080"
+      - "9083:8081"
+    environment:
+      <<: *hypercache-base-env
+      HYPERCACHE_NODE_ID: "node-3"
+      HYPERCACHE_DIST_ADDR: "hypercache-3:7946"
+      HYPERCACHE_SEEDS: "node-1@hypercache-1:7946,node-2@hypercache-2:7946,node-4@hypercache-4:7946,node-5@hypercache-5:7946"
+
+  hypercache-4:
+    <<: *hypercache-base
+    container_name: hypercache-4
+    hostname: hypercache-4
+    ports:
+      - "8084:8080"
+      - "9084:8081"
+    environment:
+      <<: *hypercache-base-env
+      HYPERCACHE_NODE_ID: "node-4"
+      HYPERCACHE_DIST_ADDR: "hypercache-4:7946"
+      HYPERCACHE_SEEDS: "node-1@hypercache-1:7946,node-2@hypercache-2:7946,node-3@hypercache-3:7946,node-5@hypercache-5:7946"
+
+  hypercache-5:
+    <<: *hypercache-base
+    container_name: hypercache-5
+    hostname: hypercache-5
+    ports:
+      - "8085:8080"
+      - "9085:8081"
+    environment:
+      <<: *hypercache-base-env
+      HYPERCACHE_NODE_ID: "node-5"
+      HYPERCACHE_DIST_ADDR: "hypercache-5:7946"
+      HYPERCACHE_SEEDS: "node-1@hypercache-1:7946,node-2@hypercache-2:7946,node-3@hypercache-3:7946,node-4@hypercache-4:7946"
+
+  monitor:
+    # Pre-built by `make start-oidc` (or `docker build -t
+    # hypercache-monitor:oidc-example .` from the monitor root).
+    # We can't use `build:` here either — Compose's bake mode
+    # resolves `context: ../..` against the project directory in
+    # ways that surface as silent path bugs. Pre-building the
+    # monitor image keeps the failure surfaces visible.
+    image: hypercache-monitor:oidc-example
+    container_name: hypercache-monitor
+    hostname: monitor
+    restart: unless-stopped
+    environment:
+      HYPERCACHE_MONITOR_CLUSTERS: /app/clusters.yaml
+      # iron-session secret. 32-char min. Dev-only value baked
+      # in; rotate before deploying anything derived from this
+      # example.
+      IRON_SESSION_SECRET: hypercache-monitor-dev-iron-session-secret-32+
+      # OIDC config — same issuer string as the cache nodes use,
+      # so the IdP-issued JWT verifies identically on both sides.
+      AUTH_OIDC_ISSUER: http://keycloak:8080/realms/hypercache
+      AUTH_OIDC_CLIENT_ID: hypercache-monitor
+      AUTH_OIDC_CLIENT_SECRET: hypercache-monitor-dev-secret
+      AUTH_OIDC_PROVIDER_NAME: "Keycloak (dev)"
+      AUTH_OIDC_SCOPES: openid profile email
+      AUTH_SECRET: hypercache-monitor-dev-auth-secret-32-chars-+
+      AUTH_URL: http://localhost:3000
+      HYPERCACHE_MONITOR_ENABLE_ADMIN_OPS: "true"
+      NODE_ENV: production
+    volumes:
+      - ./clusters.yaml:/app/clusters.yaml:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      hypercache-1:
+        condition: service_started
+    networks:
+      - hypercache
+
+networks:
+  hypercache:
+    name: hypercache-cluster
