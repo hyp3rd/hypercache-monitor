@@ -144,9 +144,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </NavLink>
         </nav>
         <div className="border-border/50 text-muted-foreground border-t p-3 text-[11px]">
-          <p className="font-mono">v0.9.0 · Phase C — SSE live topology</p>
+          <p className="font-mono">v0.10.0 · Phase C — auth.js v5 OIDC</p>
           <p className="mt-1">
-            Live `members` + `heartbeat` events; polling fallback on disconnect.
+            Optional IdP sign-in alongside operator-issued bearers.
           </p>
         </div>
       </aside>

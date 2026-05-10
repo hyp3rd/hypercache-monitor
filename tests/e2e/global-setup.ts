@@ -7,6 +7,7 @@ import {
   STUB_MGMT_URL_B,
   type StubHandle,
 } from "./fixtures/cache-stub";
+import { startOIDCStub, type OIDCStubHandle } from "./fixtures/oidc-stub";
 
 /**
  * Playwright globalSetup runs once before the test suite.
@@ -21,13 +22,20 @@ import {
  * see that module for why writing here would race the webServer's
  * first request.
  *
- * Stash both stubs on `globalThis` so globalTeardown closes them
- * cleanly.
+ * Phase C OIDC: starts an in-process OIDC IdP stub on
+ * OIDC_STUB_PORT (3411) — the AUTH_OIDC_* env vars in
+ * playwright.config.ts point at it. The cache stubs are unaware
+ * of OIDC; they accept the bearer the IdP stub returns
+ * (STUB_VALID_TOKEN, see oidc-stub.ts comment for rationale).
+ *
+ * Stash all three stubs on `globalThis` so globalTeardown closes
+ * them cleanly.
  */
 
 declare global {
   var __cacheStub: StubHandle | undefined;
   var __cacheStubB: StubHandle | undefined;
+  var __oidcStub: OIDCStubHandle | undefined;
 }
 
 async function globalSetup(): Promise<void> {
@@ -39,9 +47,11 @@ async function globalSetup(): Promise<void> {
     mgmtUrl: STUB_MGMT_URL_B,
     identity: STUB_IDENTITY_B,
   });
+  const oidc = await startOIDCStub();
 
   globalThis.__cacheStub = stubA;
   globalThis.__cacheStubB = stubB;
+  globalThis.__oidcStub = oidc;
 }
 
 export default globalSetup;

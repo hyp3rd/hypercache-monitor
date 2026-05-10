@@ -33,10 +33,28 @@ import "server-only";
 
 export type Scope = "read" | "write" | "admin";
 
+/**
+ * SessionSource tags the origin of the bearer in
+ * `ClusterSession.token`:
+ *
+ *   - `"static"`: operator pasted a token on the login form
+ *     (Phase A/B/C1 flow). Existing sessions sealed before
+ *     Phase C OIDC have no `source` field at all; logout
+ *     defaults to "static" so they keep behaving identically.
+ *   - `"oidc"`: token is an IdP-issued access token. Logout
+ *     also signs the operator out of auth.js (clears its
+ *     cookie, optionally pings the IdP's end_session_endpoint).
+ *
+ * Optional + back-compat default to "static" — the proxy and
+ * every read path are agnostic to source; only logout cares.
+ */
+export type SessionSource = "static" | "oidc";
+
 export interface ClusterSession {
   token: string;
   identity: string;
   scopes: Scope[];
+  source?: SessionSource;
 }
 
 export interface SessionData {

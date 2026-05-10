@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
 
 /**
  * Pins the two logout shapes:
@@ -12,11 +11,22 @@ import { POST } from "./route";
  * needs a cookie store. The hand-rolled FakeSession exposes the
  * mutable shape the route actually touches (activeClusterId,
  * sessions, save, destroy).
+ *
+ * Mocks `@/lib/auth/oidc` so the route can import the
+ * `isOIDCEnabled` flag + `signOut` helper without dragging in
+ * auth.js's NextAuth() factory + serverEnv evaluation. This
+ * test is about the iron-session mutation logic, not the IdP
+ * integration — the OIDC-source branch is exercised by setting
+ * `isOIDCEnabled = true` in a dedicated subset.
  */
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
+vi.mock("@/lib/auth/oidc", () => ({ isOIDCEnabled: false, signOut: vi.fn() }));
+
 const { getSession } = await import("@/lib/auth/session");
+const oidcModule = await import("@/lib/auth/oidc");
+const { POST } = await import("./route");
 
 interface FakeSession {
   activeClusterId?: string;
@@ -196,5 +206,182 @@ describe("POST /api/auth/logout", () => {
     expect((await res.json()).code).toBe("BAD_REQUEST");
     // getSession must not have been touched on the rejected path.
     expect(getSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
+  // Each test in this block re-stubs isOIDCEnabled to true. The
+  // module-level mock defaults to false; vi.mocked + Object.defineProperty
+  // can't override a const export, so we use vi.doMock + a re-import per
+  // test. That's heavier but matches the rule: only mocks at the call
+  // boundary, no module-internal state mutation.
+
+  beforeEach(() => {
+    vi.mocked(getSession).mockReset();
+    vi.mocked(oidcModule.signOut).mockReset();
+    vi.mocked(oidcModule.signOut).mockResolvedValue(
+      new Response(null, { status: 200 }) as never,
+    );
+  });
+
+  it("calls auth.js signOut on whole-session destroy when an OIDC-sourced session exists and OIDC is enabled", async () => {
+    // Re-mock the module to flip isOIDCEnabled true for this test.
+    vi.doMock("@/lib/auth/oidc", () => ({
+      isOIDCEnabled: true,
+      signOut: oidcModule.signOut,
+    }));
+    vi.resetModules();
+    const { POST: postWithOIDC } = await import("./route");
+
+    const session = makeSession({
+      activeClusterId: "default",
+      sessions: {
+        default: {
+          token: "idp-jwt",
+          identity: "alice",
+          scopes: ["read"],
+          // @ts-expect-error — OIDC source extension on the
+          // FakeSession sessions value type. The real
+          // ClusterSession has source?: 'static'|'oidc'.
+          source: "oidc",
+        },
+      },
+    });
+    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+
+    const res = await postWithOIDC(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(session.destroy).toHaveBeenCalledOnce();
+    expect(oidcModule.signOut).toHaveBeenCalledWith({ redirect: false });
+  });
+
+  it("does not call auth.js signOut when no OIDC-sourced session exists", async () => {
+    vi.doMock("@/lib/auth/oidc", () => ({
+      isOIDCEnabled: true,
+      signOut: oidcModule.signOut,
+    }));
+    vi.resetModules();
+    const { POST: postWithOIDC } = await import("./route");
+
+    const session = makeSession({
+      activeClusterId: "default",
+      sessions: {
+        default: { token: "static-bearer", identity: "ops", scopes: ["read"] },
+      },
+    });
+    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+
+    const res = await postWithOIDC(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(session.destroy).toHaveBeenCalledOnce();
+    expect(oidcModule.signOut).not.toHaveBeenCalled();
+  });
+
+  it("calls auth.js signOut on per-cluster logout when dropping the last OIDC session", async () => {
+    vi.doMock("@/lib/auth/oidc", () => ({
+      isOIDCEnabled: true,
+      signOut: oidcModule.signOut,
+    }));
+    vi.resetModules();
+    const { POST: postWithOIDC } = await import("./route");
+
+    const session = makeSession({
+      activeClusterId: "secondary",
+      sessions: {
+        default: { token: "static", identity: "ops", scopes: ["read"] },
+        secondary: {
+          token: "idp-jwt",
+          identity: "alice",
+          scopes: ["read"],
+          // @ts-expect-error — OIDC source extension; see above.
+          source: "oidc",
+        },
+      },
+    });
+    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+
+    const res = await postWithOIDC(makeReq("cluster=secondary"));
+
+    expect(res.status).toBe(200);
+    expect(oidcModule.signOut).toHaveBeenCalledWith({ redirect: false });
+    // The static-bearer entry survives.
+    expect(session.sessions).toEqual({
+      default: { token: "static", identity: "ops", scopes: ["read"] },
+    });
+  });
+
+  it("does NOT call auth.js signOut on per-cluster logout when another OIDC session remains", async () => {
+    vi.doMock("@/lib/auth/oidc", () => ({
+      isOIDCEnabled: true,
+      signOut: oidcModule.signOut,
+    }));
+    vi.resetModules();
+    const { POST: postWithOIDC } = await import("./route");
+
+    const session = makeSession({
+      activeClusterId: "secondary",
+      sessions: {
+        primary: {
+          token: "idp-jwt-1",
+          identity: "alice",
+          scopes: ["read"],
+          // @ts-expect-error — OIDC source extension; see above.
+          source: "oidc",
+        },
+        secondary: {
+          token: "idp-jwt-2",
+          identity: "alice",
+          scopes: ["read"],
+          // @ts-expect-error — OIDC source extension; see above.
+          source: "oidc",
+        },
+      },
+    });
+    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+
+    const res = await postWithOIDC(makeReq("cluster=secondary"));
+
+    expect(res.status).toBe(200);
+    // primary still holds an OIDC session — must keep auth.js cookie.
+    expect(oidcModule.signOut).not.toHaveBeenCalled();
+  });
+
+  it("swallows auth.js signOut errors so iron-session destroy still completes", async () => {
+    vi.doMock("@/lib/auth/oidc", () => ({
+      isOIDCEnabled: true,
+      signOut: oidcModule.signOut,
+    }));
+    vi.resetModules();
+    const { POST: postWithOIDC } = await import("./route");
+
+    vi.mocked(oidcModule.signOut).mockRejectedValueOnce(
+      new Error("IdP unreachable"),
+    );
+
+    const session = makeSession({
+      activeClusterId: "default",
+      sessions: {
+        default: {
+          token: "idp-jwt",
+          identity: "alice",
+          scopes: ["read"],
+          // @ts-expect-error — OIDC source extension; see above.
+          source: "oidc",
+        },
+      },
+    });
+    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+
+    // The console.warn from the swallow path is expected — silence it.
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const res = await postWithOIDC(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(session.destroy).toHaveBeenCalledOnce();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });

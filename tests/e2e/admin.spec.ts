@@ -29,7 +29,7 @@ import { STUB_VALID_TOKEN } from "./fixtures/cache-stub";
 async function login(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Token").fill(STUB_VALID_TOKEN);
-  await page.getByRole("button", { name: /sign in/i }).click();
+  await page.getByRole("button", { name: /^Sign in$/i }).click();
   await expect(page).toHaveURL(/\/topology/, { timeout: 10_000 });
 }
 
