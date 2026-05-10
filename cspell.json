@@ -1,10 +1,6 @@
 {
   "version": "0.2",
-  "ignorePaths": [
-    ".gitignore",
-    ".dockerignore",
-    ".project-settings.env"
-  ],
+  "ignorePaths": [".gitignore", ".dockerignore", ".project-settings.env"],
   "dictionaryDefinitions": [
     {
       "name": "custom-dictionary",
@@ -12,9 +8,7 @@
       "addWords": true
     }
   ],
-  "dictionaries": [
-    "custom-dictionary"
-  ],
+  "dictionaries": ["custom-dictionary"],
   "words": [
     "authjs",
     "autobuild",
