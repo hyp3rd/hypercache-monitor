@@ -137,6 +137,72 @@ deterministic. To experiment:
   `multivalued: "false"` on the mapper and unset
   `HYPERCACHE_OIDC_SCOPE_CLAIM` (the cache defaults to `scope`).
 
+## Troubleshooting
+
+The four landmines we walked into building this stack — recorded
+here so the next person doesn't have to re-discover them.
+
+### `DNS_PROBE_FINISHED_NXDOMAIN` after clicking the OIDC button
+
+The browser can't resolve `keycloak`. You're missing the
+`/etc/hosts` entry — see [the prerequisites](#etchosts-entry-one-time)
+above. The `make start-oidc` target emits a warning when this
+entry is missing, but it's easy to miss in the build noise. One-line
+fix:
+
+```sh
+echo '127.0.0.1   keycloak' | sudo tee -a /etc/hosts
+```
+
+### Keycloak: `Invalid scopes: openid profile email`
+
+Keycloak's `--import-realm` is a strict replace — it does **not**
+auto-create the standard client scopes (`profile`, `email`,
+`web-origins`) that the admin UI creates for you. If you fork
+`keycloak/realm.json` and reference scopes by name without
+defining them in the `clientScopes` array, the imported realm
+ends up with `cache-scopes` only, and auth.js's
+`scope=openid profile email` request fails the IdP's
+scope-validation gate. The shipped realm defines all four;
+keep them defined when extending.
+
+### Cache returns `OIDC token rejected by cluster (UNAUTHORIZED)`
+
+Keycloak access tokens by default don't include the requesting
+client's id in the `aud` claim — the access token is scoped to
+_resource servers_, not to the OAuth2 client. Without `aud`, the
+cache's go-oidc verifier (which validates `aud == hypercache-monitor`
+per `HYPERCACHE_OIDC_AUDIENCE`) rejects the token.
+
+The realm fixes this with an `oidc-audience-mapper` on the
+`cache-scopes` client scope — every issued access token carries
+`aud: hypercache-monitor`. If you're swapping in a different
+IdP, configure the equivalent audience-injection mapper or set
+`HYPERCACHE_OIDC_AUDIENCE` to a value the IdP already populates.
+
+### Successful login redirects to `http://0.0.0.0:3000/topology`
+
+Next.js 16 standalone mode binds on `HOSTNAME=0.0.0.0` (so the
+docker port-mapping works) and uses that bind address to
+construct `NextRequest.url`, ignoring the actual `Host` header.
+Any redirect built with `new URL(path, req.url)` ends up pointing
+at `0.0.0.0` — which the browser sometimes follows (different
+cookie scope) and sometimes can't follow at all (ERR_INVALID_URL).
+
+The fix lives in [src/lib/url/host-base.ts](../../src/lib/url/host-base.ts):
+both [src/proxy.ts](../../src/proxy.ts) and the OIDC callback route
+build redirects from the actual `Host` / `X-Forwarded-Host`
+headers via the shared `baseFromHost` helper. Behind a real
+reverse proxy (k8s ingress, nginx) the helper picks the
+forwarded host automatically.
+
+### Test users prompted to "Update Profile" on first login
+
+Keycloak's default required-actions list includes "Update Profile"
+when `firstName` / `lastName` aren't set. The shipped realm
+populates both and sets `requiredActions: []` on every test user
+so first-login goes straight to the consent → callback path.
+
 ## Security notes (read before pointing this at production)
 
 - The realm secret (`hypercache-monitor-dev-secret`), the
