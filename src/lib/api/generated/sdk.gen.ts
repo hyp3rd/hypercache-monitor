@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { BatchDeleteData, BatchDeleteErrors, BatchDeleteResponses, BatchGetData, BatchGetErrors, BatchGetResponses, BatchPutData, BatchPutErrors, BatchPutResponses, DeleteCacheItemData, DeleteCacheItemErrors, DeleteCacheItemResponses, GetCacheItemData, GetCacheItemErrors, GetCacheItemResponses, GetHealthzData, GetHealthzResponses, GetKeyOwnersData, GetKeyOwnersErrors, GetKeyOwnersResponses, GetOpenApiSpecData, GetOpenApiSpecResponses, HeadCacheItemData, HeadCacheItemErrors, HeadCacheItemResponses, PutCacheItemData, PutCacheItemErrors, PutCacheItemResponses } from './types.gen';
+import type { BatchDeleteData, BatchDeleteErrors, BatchDeleteResponses, BatchGetData, BatchGetErrors, BatchGetResponses, BatchPutData, BatchPutErrors, BatchPutResponses, DeleteCacheItemData, DeleteCacheItemErrors, DeleteCacheItemResponses, GetCacheItemData, GetCacheItemErrors, GetCacheItemResponses, GetHealthzData, GetHealthzResponses, GetIdentityData, GetIdentityErrors, GetIdentityResponses, GetKeyOwnersData, GetKeyOwnersErrors, GetKeyOwnersResponses, GetOpenApiSpecData, GetOpenApiSpecResponses, HeadCacheItemData, HeadCacheItemErrors, HeadCacheItemResponses, PutCacheItemData, PutCacheItemErrors, PutCacheItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -41,6 +41,29 @@ export class Meta {
      */
     public static getOpenApiSpec<ThrowOnError extends boolean = false>(options?: Options<GetOpenApiSpecData, ThrowOnError>) {
         return (options?.client ?? client).get<GetOpenApiSpecResponses, unknown, ThrowOnError>({ url: '/v1/openapi.yaml', ...options });
+    }
+
+    /**
+     * Resolved caller identity.
+     *
+     * Returns the identity resolved from the request credentials
+     * (bearer token, mTLS cert, or `anonymous` when AllowAnonymous
+     * is enabled). Includes the granted scopes so callers can
+     * introspect their permissions without trial-and-error against
+     * scope-protected routes.
+     *
+     * Requires the `read` scope — operators in pure-write or pure-
+     * admin token configurations do not need to introspect their
+     * own identity for normal cache use; the monitor's login flow
+     * is the primary consumer.
+     *
+     */
+    public static getIdentity<ThrowOnError extends boolean = false>(options?: Options<GetIdentityData, ThrowOnError>) {
+        return (options?.client ?? client).get<GetIdentityResponses, GetIdentityErrors, ThrowOnError>({
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/v1/me',
+            ...options
+        });
     }
 }
 

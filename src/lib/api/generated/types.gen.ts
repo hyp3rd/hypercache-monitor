@@ -52,6 +52,20 @@ export type OwnersResponse = {
     node: string;
 };
 
+export type IdentityResponse = {
+    /**
+     * Identity label from the auth config (Tokens[].ID,
+     * CertIdentities[].SubjectCN, or `anonymous` when
+     * AllowAnonymous is enabled).
+     *
+     */
+    id: string;
+    /**
+     * Permission scopes granted to this identity.
+     */
+    scopes: Array<'read' | 'write' | 'admin'>;
+};
+
 export type ItemEnvelope = {
     key: string;
     /**
@@ -388,6 +402,31 @@ export type GetKeyOwnersResponses = {
 };
 
 export type GetKeyOwnersResponse = GetKeyOwnersResponses[keyof GetKeyOwnersResponses];
+
+export type GetIdentityData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/me';
+};
+
+export type GetIdentityErrors = {
+    /**
+     * Missing or invalid bearer token.
+     */
+    401: ErrorResponse;
+};
+
+export type GetIdentityError = GetIdentityErrors[keyof GetIdentityErrors];
+
+export type GetIdentityResponses = {
+    /**
+     * Resolved identity + granted scopes.
+     */
+    200: IdentityResponse;
+};
+
+export type GetIdentityResponse = GetIdentityResponses[keyof GetIdentityResponses];
 
 export type BatchGetData = {
     body: BatchGetRequest;

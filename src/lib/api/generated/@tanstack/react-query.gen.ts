@@ -4,7 +4,7 @@ import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanst
 
 import { client } from '../client.gen';
 import { Batch, Cache, Cluster, Meta, type Options } from '../sdk.gen';
-import type { BatchDeleteData, BatchDeleteError, BatchDeleteResponse2, BatchGetData, BatchGetError, BatchGetResponse2, BatchPutData, BatchPutError, BatchPutResponse2, DeleteCacheItemData, DeleteCacheItemError, DeleteCacheItemResponse, GetCacheItemData, GetCacheItemError, GetCacheItemResponse, GetHealthzData, GetHealthzResponse, GetKeyOwnersData, GetKeyOwnersError, GetKeyOwnersResponse, GetOpenApiSpecData, GetOpenApiSpecResponse, PutCacheItemData, PutCacheItemError, PutCacheItemResponse } from '../types.gen';
+import type { BatchDeleteData, BatchDeleteError, BatchDeleteResponse2, BatchGetData, BatchGetError, BatchGetResponse2, BatchPutData, BatchPutError, BatchPutResponse2, DeleteCacheItemData, DeleteCacheItemError, DeleteCacheItemResponse, GetCacheItemData, GetCacheItemError, GetCacheItemResponse, GetHealthzData, GetHealthzResponse, GetIdentityData, GetIdentityError, GetIdentityResponse, GetKeyOwnersData, GetKeyOwnersError, GetKeyOwnersResponse, GetOpenApiSpecData, GetOpenApiSpecResponse, PutCacheItemData, PutCacheItemError, PutCacheItemResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -174,6 +174,36 @@ export const getKeyOwnersOptions = (options: Options<GetKeyOwnersData>) => query
         return data;
     },
     queryKey: getKeyOwnersQueryKey(options)
+});
+
+export const getIdentityQueryKey = (options?: Options<GetIdentityData>) => createQueryKey('getIdentity', options);
+
+/**
+ * Resolved caller identity.
+ *
+ * Returns the identity resolved from the request credentials
+ * (bearer token, mTLS cert, or `anonymous` when AllowAnonymous
+ * is enabled). Includes the granted scopes so callers can
+ * introspect their permissions without trial-and-error against
+ * scope-protected routes.
+ *
+ * Requires the `read` scope — operators in pure-write or pure-
+ * admin token configurations do not need to introspect their
+ * own identity for normal cache use; the monitor's login flow
+ * is the primary consumer.
+ *
+ */
+export const getIdentityOptions = (options?: Options<GetIdentityData>) => queryOptions<GetIdentityResponse, GetIdentityError, GetIdentityResponse, ReturnType<typeof getIdentityQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await Meta.getIdentity({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getIdentityQueryKey(options)
 });
 
 /**

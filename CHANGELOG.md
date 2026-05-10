@@ -7,6 +7,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 The version label visible in the app's sidebar footer is the
 authoritative current version.
 
+## [Unreleased]
+
+### Added
+
+- **Per-cluster logout** — `POST /api/auth/logout?cluster=<id>`
+  drops just that cluster's session entry without destroying the
+  whole iron-session cookie. Pairs with the existing query-less
+  endpoint (whole-session destroy, unchanged). When the dropped
+  cluster is the active one, the active is reassigned to the
+  alphabetically-first remaining bound cluster; when no clusters
+  remain bound, the cookie is destroyed. Idempotent on
+  not-bound (returns `ok: true, removed: false`). Closes one
+  of the lingering "still out of scope" items from the Phase
+  C1 plan. 7 unit tests in
+  [route.test.ts](src/app/api/auth/logout/route.test.ts) cover
+  every branch.
+
 ## [0.9.0] — Phase C: SSE live topology
 
 Replaces `/topology`'s 2-second polling cadence with a live
