@@ -1,4 +1,5 @@
 import { sessionOptions, type SessionData } from "@/lib/auth/session";
+import { baseFromHost } from "@/lib/url/host-base";
 import { getIronSession } from "iron-session";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -29,9 +30,12 @@ export async function proxy(req: NextRequest) {
   // only).
   const session = await getIronSession<SessionData>(req, res, sessionOptions);
   if (!session.activeClusterId) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    // baseFromHost reads the `Host` header instead of req.nextUrl,
+    // which carries the listener bind address (`0.0.0.0:3000` in
+    // standalone mode) and would land the browser on the wrong
+    // cookie scope. See src/lib/url/host-base.ts for the full
+    // rationale.
+    return NextResponse.redirect(new URL("/login", baseFromHost(req)));
   }
   return res;
 }

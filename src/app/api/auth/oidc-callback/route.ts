@@ -1,6 +1,7 @@
 import { auth, isOIDCEnabled } from "@/lib/auth/oidc";
 import { getSession, type Scope } from "@/lib/auth/session";
 import { DEFAULT_CLUSTER_ID, getCluster } from "@/lib/clusters/registry";
+import { baseFromHost } from "@/lib/url/host-base";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -49,31 +50,6 @@ const meResponseSchema = z
     scopes: z.array(z.enum(["read", "write", "admin"])).max(8),
   })
   .passthrough();
-
-/**
- * baseFromHost resolves a same-origin URL against the request's
- * actual `Host` header rather than `req.url`. In Next.js 16
- * standalone mode, `NextRequest.url` is constructed from the
- * `HOSTNAME` env var (typically `0.0.0.0` for the bound listener),
- * not from the incoming `Host` header — so `new URL(path, req.url)`
- * produces a `Location: http://0.0.0.0:3000/...` redirect that
- * the browser can't follow. Building the URL from the Host header
- * + protocol gets the canonical operator-visible URL.
- *
- * Forwarded headers win when present (proxied deployments). Falls
- * back to `req.nextUrl.host` only if no Host header is set, which
- * is unreachable in practice via a real HTTP client.
- */
-function baseFromHost(req: NextRequest): URL {
-  const host =
-    req.headers.get("x-forwarded-host") ??
-    req.headers.get("host") ??
-    req.nextUrl.host;
-  const proto =
-    req.headers.get("x-forwarded-proto") ??
-    req.nextUrl.protocol.replace(":", "");
-  return new URL(`${proto}://${host}`);
-}
 
 export async function GET(req: NextRequest): Promise<Response> {
   if (!isOIDCEnabled) {
