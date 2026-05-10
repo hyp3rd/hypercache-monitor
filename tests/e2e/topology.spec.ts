@@ -32,7 +32,7 @@ test.describe("topology surface", () => {
   test("bad token surfaces an error on login", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Token").fill("not-the-right-token");
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByRole("button", { name: /^Sign in$/i }).click();
 
     // Target the form's error region by id — getByRole("alert")
     // collides with Next's route-announcer.
@@ -51,7 +51,7 @@ test.describe("topology surface", () => {
     // 1. Login
     await page.goto("/login");
     await page.getByLabel("Token").fill(STUB_VALID_TOKEN);
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByRole("button", { name: /^Sign in$/i }).click();
     await expect(page).toHaveURL(/\/topology/, { timeout: 10_000 });
 
     // 2. Members table renders the 5 fixture nodes. Scope to
@@ -110,7 +110,7 @@ test.describe("topology surface", () => {
 
     await page.goto("/login");
     await page.getByLabel("Token").fill(STUB_VALID_TOKEN);
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByRole("button", { name: /^Sign in$/i }).click();
     await expect(page).toHaveURL(/\/topology/, { timeout: 10_000 });
 
     // Members table renders — confirms the page hydrated; SSE

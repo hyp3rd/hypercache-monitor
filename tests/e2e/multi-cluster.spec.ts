@@ -45,7 +45,7 @@ async function loginOnActiveCluster(page: Page) {
   // active cluster id rides along via the form's preselected
   // dropdown value.
   await page.getByLabel("Token").fill(STUB_VALID_TOKEN);
-  await page.getByRole("button", { name: /sign in/i }).click();
+  await page.getByRole("button", { name: /^Sign in$/i }).click();
   await expect(page).toHaveURL(/\/topology/, { timeout: 10_000 });
 }
 

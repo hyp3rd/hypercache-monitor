@@ -30,6 +30,13 @@ export default defineConfig({
         "**/*.config.{ts,mjs}",
       ],
     },
+    // next-auth v5 uses Node's package-self-resolution
+    // (`import "next/server"`) inside node_modules. Vitest's
+    // dependency-externalization layer skips alias resolution
+    // for ESM externals; inlining next-auth pulls it through
+    // Vite's transformer so our `next/server` alias above
+    // takes effect.
+    server: { deps: { inline: ["next-auth", "@auth/core"] } },
   },
   resolve: {
     alias: {
@@ -39,6 +46,12 @@ export default defineConfig({
       // stub so tests can exercise server-only code without the
       // resolver erroring.
       "server-only": resolve(__dirname, "./src/test/server-only-stub.ts"),
+      // next-auth v5 (and other libraries) import `next/server`
+      // bare — Next.js's package self-resolution turns that into
+      // `./server.js` at runtime, but Vitest's resolver doesn't
+      // implement self-references. Alias to the `.js` file so
+      // imports of NextRequest/NextResponse etc. resolve cleanly.
+      "next/server": resolve(__dirname, "./node_modules/next/server.js"),
     },
   },
 });

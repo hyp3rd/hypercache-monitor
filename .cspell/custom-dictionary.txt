@@ -23,6 +23,7 @@ Lockfiles
 Merkle
 Mgmt
 misrouted
+nextauth
 nums
 nvmrc
 omitempty

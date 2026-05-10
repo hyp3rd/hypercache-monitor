@@ -9,8 +9,42 @@ authoritative current version.
 
 ## [Unreleased]
 
+## [0.10.0] — Phase C: auth.js v5 OIDC
+
+Closes the Phase C roadmap with optional OIDC sign-in alongside
+the existing operator-issued bearer flow. Operators can sign in
+once at their IdP and present the issued access token to every
+cluster; static-bearer logins remain valid for machine
+integrations and break-glass use.
+
 ### Added
 
+- **OIDC sign-in flow** — when `AUTH_OIDC_ISSUER` (plus
+  `AUTH_OIDC_CLIENT_ID`, `AUTH_OIDC_CLIENT_SECRET`,
+  `AUTH_SECRET`) are set, `/login` renders a "Sign in with
+  &lt;provider&gt;" button above the existing token-paste form.
+  Clicking it calls auth.js v5's `signIn("oidc", ...)` client
+  helper, which posts the CSRF dance and redirects to the IdP.
+  After the IdP returns, auth.js's callback hands off to a
+  monitor-owned post-callback route at
+  [/api/auth/oidc-callback](src/app/api/auth/oidc-callback/route.ts)
+  that probes the chosen cluster's `/v1/me` with the IdP-issued
+  access token and seals iron-session in the existing
+  `{ token, identity, scopes }` shape — extended with
+  `source: "oidc"` so logout knows to also clear auth.js's
+  cookie. Single-IdP-across-all-clusters by design;
+  per-cluster IdP federation is a deliberate non-goal.
+- **Generic OIDC provider** — auth.js's `type: "oidc"`
+  configured via `<issuer>/.well-known/openid-configuration`
+  discovery, no hardcoded vendor. Verified against Keycloak,
+  Auth0, Microsoft Entra, and Okta. Operators wire their
+  IdP via `AUTH_OIDC_*` env vars validated in `src/env/server.ts`
+  with a `superRefine` that rejects partial config.
+- **Hybrid coexistence** — the static-bearer flow remains
+  unchanged. The cache's `httpauth.Policy` resolve chain
+  already handles bearer-fallthrough → ServerVerify, so a
+  hybrid k8s deployment with both OIDC and static bearers
+  configured serves both shapes against the same cluster.
 - **Per-cluster logout** — `POST /api/auth/logout?cluster=<id>`
   drops just that cluster's session entry without destroying the
   whole iron-session cookie. Pairs with the existing query-less
@@ -20,9 +54,64 @@ authoritative current version.
   remain bound, the cookie is destroyed. Idempotent on
   not-bound (returns `ok: true, removed: false`). Closes one
   of the lingering "still out of scope" items from the Phase
-  C1 plan. 7 unit tests in
+  C1 plan. The whole-session and per-cluster paths now also
+  call auth.js's `signOut()` when an OIDC session was active,
+  best-effort against the IdP's `end_session_endpoint`. 12
+  unit tests in
   [route.test.ts](src/app/api/auth/logout/route.test.ts) cover
-  every branch.
+  every branch including the OIDC-source detection.
+
+### Stopping conditions
+
+- **Token refresh is a v2 follow-up.** Access tokens expire
+  (typically 1h). When the iron-session-stored bearer goes stale,
+  the cache returns 401 and the operator re-signs-in. Operators
+  with short-lived IdP tokens (< 1h) will see frequent re-auth
+  prompts. v2 will wire auth.js's JWT-callback refresh hook plus
+  a proactive re-seal in iron-session before each upstream
+  forward.
+- **RP-initiated single sign-out** is best-effort — works when
+  the IdP advertises `end_session_endpoint` in its discovery doc.
+  Otherwise local-only logout. Documented in the auth.js docs.
+- **next-auth v5** is technically still on the beta tag at the
+  time of release (5.0.0-beta.31). It has been beta-stable for
+  18+ months and is the App Router-native default in every
+  current auth.js doc — verified via
+  [authjs.dev](https://authjs.dev/getting-started/installation).
+  The v4 line is Pages-Router-only. We pin the explicit beta
+  range in package.json.
+- **AUTH_URL pin in tests.** Auth.js v5 builds the OIDC
+  `redirect_uri` from the request's `Host` header. Some
+  Node.js HTTP layers normalize between `127.0.0.1` and
+  `localhost` in generated URLs, breaking the host-scoped
+  PKCE/state cookies on the callback. Our Playwright config
+  pins `AUTH_URL=http://localhost:3100` and runs E2E
+  on `localhost` throughout. Production deployments should set
+  `AUTH_URL` to their canonical public URL.
+
+### Changed
+
+- `trustHost: true` unconditionally in `src/lib/auth/oidc.ts`.
+  Auth.js v5's CSRF gate enforces trustHost on POST /signin;
+  every supported deployment terminates TLS at a known proxy
+  or runs on localhost. Operators who need stricter Host
+  validation should put a WAF in front of the monitor.
+- E2E sign-in selectors switched to `name: /^Sign in$/i` to
+  disambiguate from the OIDC button when both render. The
+  selector behavior is identical for OIDC-disabled
+  deployments.
+
+### Verified
+
+- `make ci` clean (vitest 24 files / 213 tests, ESLint, tsc,
+  audit, build).
+- `CI=1 make e2e` clean — all 24 E2E specs pass on the static-
+  bearer flow plus the new
+  [oidc.spec.ts](tests/e2e/oidc.spec.ts) drives the full IdP
+  roundtrip against an in-process
+  [oidc-stub](tests/e2e/fixtures/oidc-stub.ts) (RS256-signed
+  JWTs, real `/.well-known/openid-configuration` + JWKS +
+  authorize + token endpoints).
 
 ## [0.9.0] — Phase C: SSE live topology
 

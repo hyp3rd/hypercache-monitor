@@ -10,6 +10,7 @@
   ],
   "dictionaries": ["custom-dictionary"],
   "words": [
+    "authjs",
     "autobuild",
     "buildx",
     "EDITMSG",
@@ -17,6 +18,7 @@
     "hostnames",
     "mkdocs",
     "nolint",
+    "PKCE",
     "subshell",
     "trivago",
     "Vercel"

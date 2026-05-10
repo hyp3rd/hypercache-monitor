@@ -17,6 +17,10 @@ async function globalTeardown(): Promise<void> {
     closes.push(globalThis.__cacheStubB.close());
     globalThis.__cacheStubB = undefined;
   }
+  if (globalThis.__oidcStub) {
+    closes.push(globalThis.__oidcStub.close());
+    globalThis.__oidcStub = undefined;
+  }
   await Promise.all(closes);
 
   // force=true keeps teardown idempotent — a second run after a

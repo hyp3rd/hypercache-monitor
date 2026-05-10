@@ -1,9 +1,12 @@
 import { BrandMark } from "@/components/brand-mark";
+import { serverEnv } from "@/env/server";
+import { isOIDCEnabled } from "@/lib/auth/oidc";
 import { listClusters } from "@/lib/clusters/registry";
 import { toListItem } from "@/lib/clusters/types";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { LoginForm } from "./_components/login-form";
+import { OidcSignInButton } from "./_components/oidc-sign-in-button";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -85,6 +88,28 @@ export default async function LoginPage({
             Operator control panel for distributed cache clusters.
           </p>
         </div>
+        {/* Phase C OIDC: when configured, the IdP button sits
+         * above the token-paste form. The form is still
+         * rendered — operators with static bearers (machine
+         * integrations, break-glass) can still paste them. The
+         * "or" divider makes the choice obvious. When OIDC is
+         * disabled (no AUTH_OIDC_ISSUER), the button is omitted
+         * entirely and the page is byte-identical to Phase C2. */}
+        {isOIDCEnabled && (
+          <div className="mb-4 space-y-3">
+            <OidcSignInButton
+              providerName={serverEnv.AUTH_OIDC_PROVIDER_NAME}
+              preselectedClusterId={preselected}
+            />
+            <div className="flex items-center gap-3">
+              <span className="bg-border/60 h-px flex-1" />
+              <span className="text-muted-foreground text-[10px] tracking-[0.18em] uppercase">
+                or paste a token
+              </span>
+              <span className="bg-border/60 h-px flex-1" />
+            </div>
+          </div>
+        )}
         <LoginForm
           clusters={clusters}
           preselectedClusterId={preselected}
