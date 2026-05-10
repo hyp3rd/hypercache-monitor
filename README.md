@@ -85,6 +85,24 @@ Open <http://localhost:3000> and sign in. Two shapes coexist:
 
 Either path lands on Topology.
 
+### Try OIDC end-to-end without configuring an IdP
+
+[`examples/oidc/`](examples/oidc/) ships a self-contained Docker stack:
+a 5-node HyperCache cluster + a pre-seeded Keycloak realm + the
+Monitor, all wired together. Bring it up with one command:
+
+```bash
+make start-oidc          # builds + starts the full stack
+make oidc-logs           # tail logs
+make stop-oidc           # stop (preserves Keycloak state)
+make clean-oidc          # full teardown including volumes
+```
+
+Three test users are pre-created (`admin`/`admin`, `ops`/`ops`,
+`viewer`/`viewer`) covering every scope combination the cache
+understands. See [examples/oidc/README.md](examples/oidc/README.md)
+for the operator guide and the one-time `/etc/hosts` step.
+
 ## Environment
 
 Validated at boot via zod ([src/env/server.ts](src/env/server.ts)) — the

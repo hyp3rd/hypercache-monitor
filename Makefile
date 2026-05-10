@@ -43,9 +43,8 @@ start: ## Run the production server (requires a prior `make build`).
 	$(NPM) run start
 
 # ---- Quality gates ---------------------------------------------------
-fmt: ## Auto-format with Prettier.
+fmt: lint ## Auto-format with Prettier.
 	$(NPM) run format
-# 	$(NPX) prettier --write .
 
 fmt-check: ## Verify Prettier formatting (CI-friendly; non-zero on diff).
 	$(NPX) prettier --ignore-unknown --check .
@@ -110,6 +109,55 @@ stop-dev-scaled: ## Tear down the local cluster.
 	@if [ ! -f ../hypercache/docker-compose.cluster.yml ]; then exit 0; fi
 	cd ../hypercache && docker compose -f docker-compose.cluster.yml down
 
+# ---- OIDC end-to-end example (cross-repo) ---------------------------
+# `examples/oidc/` ships a full working stack: the cache cluster
+# (overlaid from the cache repo's docker-compose.cluster.yml), a
+# pre-seeded Keycloak IdP, and the monitor wired to both. See
+# `examples/oidc/README.md` for the operator guide and the one-time
+# `/etc/hosts` entry the OIDC redirect requires.
+#
+# All three targets layer the cache repo's compose with this repo's
+# overlay so the cache cluster definition stays canonical (no fork)
+# and the OIDC additions are visibly scoped to the example dir.
+OIDC_COMPOSE := -f examples/oidc/docker-compose.yml
+OIDC_PROJECT := --project-name hypercache-oidc
+
+start-oidc: ## Boot the full OIDC stack (cache cluster + Keycloak + monitor).
+	@if [ ! -d ../hypercache/cmd/hypercache-server ]; then \
+		echo "expected ../hypercache/cmd/hypercache-server; clone the cache repo as a sibling"; \
+		exit 1; \
+	fi
+	@if ! grep -q "^[^#]*[[:space:]]keycloak\([[:space:]]\|$$\)" /etc/hosts 2>/dev/null; then \
+		echo "warning: /etc/hosts has no 'keycloak' entry — see examples/oidc/README.md"; \
+		echo "         add this line and re-run:    127.0.0.1   keycloak"; \
+	fi
+	@# Build the monitor image from this repo's root context.
+	@# Compose's bake mode resolves `context: ../..` in surprising
+	@# ways across compose files — building outside compose first
+	@# and then referencing by image: tag is the deterministic shape.
+	docker build -t hypercache-monitor:oidc-example .
+	@# Build the cache server image ONCE, sequentially. With `up
+	@# --build`, compose triggers parallel builds for every cache
+	@# service that references the same `hypercache-server:oidc-example`
+	@# tag — five concurrent Go builds compile the same binary five
+	@# times and exhaust the docker VM's build disk on first boot.
+	@# Pre-building the image once and dropping `--build` from `up`
+	@# lets the cache services share the result.
+	docker compose $(OIDC_PROJECT) $(OIDC_COMPOSE) build hypercache-1
+	docker compose $(OIDC_PROJECT) $(OIDC_COMPOSE) up -d
+	@echo ""
+	@echo "Stack up. Open http://localhost:3000/login and click 'Sign in with Keycloak (dev)'."
+	@echo "Test users (see examples/oidc/README.md): admin/admin, ops/ops, viewer/viewer."
+
+oidc-logs: ## Tail logs from the OIDC stack (Keycloak + monitor + cache).
+	docker compose $(OIDC_PROJECT) $(OIDC_COMPOSE) logs -f --tail 50
+
+stop-oidc: ## Stop the OIDC stack (preserves volumes and Keycloak realm state).
+	docker compose $(OIDC_PROJECT) $(OIDC_COMPOSE) stop
+
+clean-oidc: ## Stop the OIDC stack AND drop volumes (full teardown).
+	docker compose $(OIDC_PROJECT) $(OIDC_COMPOSE) down --volumes --remove-orphans
+
 # ---- Smoke tests (live cluster) -------------------------------------
 # Wire-contract checks that hit a real cache server, bypassing
 # the Next.js proxy. Run after `make start-dev-scaled` or
@@ -130,4 +178,5 @@ smoke: smoke-mgmt smoke-keys smoke-bulk ## Run every smoke script in order.
 .PHONY: help dev build start fmt fmt-check lint lint-fix typecheck \
 	test test-watch e2e sec codegen codegen-check ci \
 	start-dev-scaled stop-dev-scaled \
+	start-oidc stop-oidc clean-oidc oidc-logs \
 	smoke smoke-bulk smoke-keys smoke-mgmt

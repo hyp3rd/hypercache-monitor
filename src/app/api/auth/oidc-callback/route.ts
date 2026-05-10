@@ -50,6 +50,31 @@ const meResponseSchema = z
   })
   .passthrough();
 
+/**
+ * baseFromHost resolves a same-origin URL against the request's
+ * actual `Host` header rather than `req.url`. In Next.js 16
+ * standalone mode, `NextRequest.url` is constructed from the
+ * `HOSTNAME` env var (typically `0.0.0.0` for the bound listener),
+ * not from the incoming `Host` header — so `new URL(path, req.url)`
+ * produces a `Location: http://0.0.0.0:3000/...` redirect that
+ * the browser can't follow. Building the URL from the Host header
+ * + protocol gets the canonical operator-visible URL.
+ *
+ * Forwarded headers win when present (proxied deployments). Falls
+ * back to `req.nextUrl.host` only if no Host header is set, which
+ * is unreachable in practice via a real HTTP client.
+ */
+function baseFromHost(req: NextRequest): URL {
+  const host =
+    req.headers.get("x-forwarded-host") ??
+    req.headers.get("host") ??
+    req.nextUrl.host;
+  const proto =
+    req.headers.get("x-forwarded-proto") ??
+    req.nextUrl.protocol.replace(":", "");
+  return new URL(`${proto}://${host}`);
+}
+
 export async function GET(req: NextRequest): Promise<Response> {
   if (!isOIDCEnabled) {
     return NextResponse.json(
@@ -58,6 +83,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     );
   }
 
+  const base = baseFromHost(req);
   const url = new URL(req.url);
   const queryResult = querySchema.safeParse({
     cluster: url.searchParams.get("cluster") ?? undefined,
@@ -85,7 +111,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const authSession = (await auth()) as { accessToken?: string } | null;
   if (!authSession?.accessToken) {
     return NextResponse.redirect(
-      new URL(`/login?cluster=${encodeURIComponent(clusterId)}`, req.url),
+      new URL(`/login?cluster=${encodeURIComponent(clusterId)}`, base),
     );
   }
 
@@ -176,5 +202,5 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   // Land the operator on /topology — the canonical post-login
   // destination. Mirrors the static-bearer flow's redirect.
-  return NextResponse.redirect(new URL("/topology", req.url));
+  return NextResponse.redirect(new URL("/topology", base));
 }

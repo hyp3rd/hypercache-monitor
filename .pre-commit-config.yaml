@@ -15,7 +15,8 @@ repos:
               package.json|
               package-lock.json|
               tsconfig.json|
-              test-results/.last-run.json
+              test-results/.last-run.json|
+              examples/oidc/keycloak/realm.json
           )$
       - id: end-of-file-fixer
       - id: mixed-line-ending
