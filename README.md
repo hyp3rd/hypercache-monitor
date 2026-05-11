@@ -1,11 +1,12 @@
 # HyperCache Monitor
 
 Operator control panel for [HyperCache](https://github.com/hyp3rd/hypercache)
-distributed cache clusters. **v0.10.0 · Phase C complete** — every operator
+distributed cache clusters. **v0.11.0 · Phase C+ complete** — every operator
 surface is shipped: multi-cluster registry, live SSE topology, Eviction
 Controls (admin-scoped), per-cluster identity from `/v1/me`, hostname-
 default cluster routing, per-cluster logout, and optional auth.js v5 OIDC
-sign-in alongside the existing operator-issued bearer flow.
+sign-in (with automatic token refresh + RP-initiated logout) alongside the
+existing operator-issued bearer flow.
 
 ## Architecture
 
@@ -204,7 +205,7 @@ Individual gates while iterating:
 | `make fmt-check` | Verify formatting (CI-friendly).                            |
 | `make lint`      | ESLint flat config.                                         |
 | `make typecheck` | `tsc --noEmit`.                                             |
-| `make test`      | Vitest unit + component tests (213 tests across 24 files).  |
+| `make test`      | Vitest unit + component tests (235 tests across 28 files).  |
 | `make e2e`       | Playwright + axe-core (24 scenarios across 9 spec files).   |
 | `make sec`       | `npm audit --audit-level=high`.                             |
 | `make build`     | Production build (`next build`, standalone output).         |
@@ -241,7 +242,8 @@ read-only deployments can hide the controls entirely.
 | **B4** | Auth posture viewer (`/auth-info`) — identity, scopes, OpenAPI security schemes                                                                                                                                       | shipped |
 | **B5** | Live API spec viewer (`/spec`) — read-only docs renderer                                                                                                                                                              | shipped |
 | **C**  | Multi-cluster registry, hostname-default routing, live YAML reload, per-cluster identity from `/v1/me`, SSE topology, Eviction Controls, per-cluster logout, identity introspection (`/v1/me`), auth.js v5 OIDC flow. | shipped |
-| **v2** | Token refresh hook for OIDC (auth.js JWT-callback + iron-session re-seal), per-cluster IdP federation, hostname-per-cluster cookie scoping.                                                                           | future  |
+| **C+** | OIDC token refresh (auth.js JWT-callback + iron-session bridge so OIDC sessions survive past the IdP's access-token TTL), RP-initiated logout against the IdP's `end_session_endpoint`.                               | shipped |
+| **v2** | Per-cluster IdP federation, hostname-per-cluster cookie scoping (multi-tenant deployments serving different clusters per hostname).                                                                                   | future  |
 
 For wire-contract verification against a live cluster, see
 [`scripts/`](scripts/) — `smoke-bulk.sh` exercises the batch endpoints end
@@ -249,13 +251,14 @@ to end. Run as `make smoke-bulk` after `make start-dev-scaled`.
 
 ## Auth posture
 
-| What           | Where                                                                                                                                | Posture                                                                                                                                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UI ↔ cache     | Bearer token — either operator-issued out-of-band (matches an entry in the cache's `HYPERCACHE_AUTH_CONFIG`) or IdP-issued via OIDC. | Sealed in iron-session cookie with a `source: "static"` or `source: "oidc"` marker; never reaches the browser as JS-readable state.                                        |
-| OIDC sign-in   | auth.js v5 ([src/lib/auth/oidc.ts](src/lib/auth/oidc.ts)) drives the IdP redirect; the cache verifies via OIDC `ServerVerify` hook.  | Generic OIDC provider (Keycloak, Auth0, Entra, Okta — anything with `/.well-known/openid-configuration`). Single IdP across all clusters; per-cluster federation is v2.    |
-| UI session     | iron-session v8, 8-hour TTL, `httpOnly` + `SameSite=Strict` + `Secure` (in production).                                              | Cookie is signed + encrypted with `IRON_SESSION_SECRET`.                                                                                                                   |
-| Auth.js cookie | Separate JWT-strategy cookie holding the IdP-issued access token until the post-callback handler seals it into iron-session.         | Signed with `AUTH_SECRET`. Cleared on logout when any iron-session entry was OIDC-sourced; best-effort RP-initiated logout when the IdP advertises `end_session_endpoint`. |
-| CSRF           | Origin-header check on mutating verbs in the proxy.                                                                                  | All mutating routes 403 on `Origin` mismatch.                                                                                                                              |
+| What           | Where                                                                                                                                            | Posture                                                                                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI ↔ cache     | Bearer token — either operator-issued out-of-band (matches an entry in the cache's `HYPERCACHE_AUTH_CONFIG`) or IdP-issued via OIDC.             | Sealed in iron-session cookie with a `source: "static"` or `source: "oidc"` marker; never reaches the browser as JS-readable state.                                                                                           |
+| OIDC sign-in   | auth.js v5 ([src/lib/auth/oidc.ts](src/lib/auth/oidc.ts)) drives the IdP redirect; the cache verifies via OIDC `ServerVerify` hook.              | Generic OIDC provider (Keycloak, Auth0, Entra, Okta — anything with `/.well-known/openid-configuration`). Single IdP across all clusters; per-cluster federation is v2.                                                       |
+| OIDC refresh   | auth.js's jwt callback refreshes against the IdP's token endpoint when the access token is within 30s of expiry.                                 | Discovery-driven (Keycloak/Auth0/Okta paths handled identically). Refresh-token rotation honoured; failures stamp `RefreshAccessTokenError` and bounce the operator to /login.                                                |
+| UI session     | iron-session v8, 8-hour TTL, `httpOnly` + `SameSite=Strict` + `Secure` (in production).                                                          | Cookie is signed + encrypted with `IRON_SESSION_SECRET`.                                                                                                                                                                      |
+| Auth.js cookie | Separate JWT-strategy cookie holding the IdP-issued access + id + refresh tokens until the post-callback handler seals access into iron-session. | Signed with `AUTH_SECRET`. On logout, RP-initiated logout hits the IdP's `end_session_endpoint` (server-side, with `id_token_hint`) before clearing the local cookie — silent SSO re-auth doesn't happen on the next sign-in. |
+| CSRF           | Origin-header check on mutating verbs in the proxy.                                                                                              | All mutating routes 403 on `Origin` mismatch.                                                                                                                                                                                 |
 
 ## Project layout
 
@@ -286,14 +289,15 @@ src/
 │   │                                 #   + spec.ts + spec-raw.ts + keys.ts
 │   │                                 #   + generated/ (Hey API)
 │   ├── auth/
-│   │   ├── session.ts                # iron-session config + ClusterSession shape
+│   │   ├── session.ts                # iron-session + ClusterSession + activeSession bridge (OIDC token overlay)
 │   │   ├── scopes.ts                 # scope catalog (read / write / admin)
-│   │   └── oidc.ts                   # auth.js v5 NextAuth() factory + handlers
+│   │   └── oidc.ts                   # auth.js v5 factory + jwt refresh + RP-initiated logout
 │   ├── bulk/chunk.ts                 # streaming chunk-and-aggregate helper
 │   ├── clusters/                     # multi-cluster registry + YAML loader (live reload)
 │   ├── csv/                          # RFC 4180 parser + serializer
 │   ├── metrics/                      # ring buffer + polling hook
 │   ├── topology/                     # use-topology-events SSE hook + polling fallback
+│   ├── url/host-base.ts              # base-URL helper for redirects (Next standalone Host-quirk)
 │   └── query/                        # TanStack Query provider + keys + poll
 └── proxy.ts                          # Next 16 edge proxy (formerly middleware)
 

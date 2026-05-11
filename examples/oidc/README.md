@@ -119,6 +119,30 @@ verifier configured by `HYPERCACHE_OIDC_*`. Identity + scopes from
 the JWT drive the per-route gates the same way they do for static
 tokens.
 
+### Token refresh (automatic)
+
+Keycloak's default access-token lifespan is 1 hour. The monitor's
+auth.js jwt callback refreshes the token against the IdP's token
+endpoint when it's within 30s of expiry — operators stay signed in
+for as long as Keycloak's SSO session lasts (10 hours by default in
+this realm). The proxy reads the freshly-refreshed token via the
+iron-session bridge in [`activeSession`](../../src/lib/auth/session.ts);
+no operator action and no re-seal of iron-session per refresh.
+
+If the refresh fails (revoked session, IdP unreachable), the JWT is
+stamped with `RefreshAccessTokenError` and the proxy 401s on the
+next upstream call, bouncing the operator to /login.
+
+### Logout terminates the IdP session
+
+Clicking "logout" in the monitor calls the IdP's
+`end_session_endpoint` server-side with `id_token_hint` before
+clearing the local auth.js cookie. Without this step, clicking
+"Sign in with Keycloak" again would silently re-authenticate via
+SSO; you can verify the round-trip works by signing out, clicking
+sign-in, and confirming the Keycloak login form appears
+(rather than a transparent SSO re-auth).
+
 ## Customizing
 
 The example is intentionally self-contained so the boot path is

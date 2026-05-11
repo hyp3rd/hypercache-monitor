@@ -41,7 +41,7 @@ process.env.AUTH_SECRET = VALID_SECRET;
 
 vi.mock("@/lib/auth/oidc", () => ({ auth: vi.fn(), isOIDCEnabled: true }));
 
-vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
+vi.mock("@/lib/auth/session", () => ({ getSessionFor: vi.fn() }));
 
 vi.mock("@/lib/clusters/registry", () => ({
   getCluster: vi.fn(),
@@ -49,7 +49,7 @@ vi.mock("@/lib/clusters/registry", () => ({
 }));
 
 const { auth } = await import("@/lib/auth/oidc");
-const { getSession } = await import("@/lib/auth/session");
+const { getSessionFor } = await import("@/lib/auth/session");
 const { getCluster } = await import("@/lib/clusters/registry");
 const { GET } = await import("./route");
 
@@ -95,7 +95,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   vi.mocked(auth).mockReset();
-  vi.mocked(getSession).mockReset();
+  vi.mocked(getSessionFor).mockReset();
   vi.mocked(getCluster).mockReset();
   vi.mocked(getCluster).mockReturnValue(fakeCluster);
 });
@@ -106,7 +106,7 @@ describe("GET /api/auth/oidc-callback (Phase C)", () => {
       accessToken: "idp-issued-jwt",
     } as never);
     const session = makeSession({});
-    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+    vi.mocked(getSessionFor).mockResolvedValueOnce(session as never);
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({ id: "alice@example.com", scopes: ["read", "write"] }),
@@ -121,8 +121,12 @@ describe("GET /api/auth/oidc-callback (Phase C)", () => {
     // Sealed shape — identity + scopes from /v1/me, source marker
     // for the logout path to detect OIDC sessions.
     expect(session.activeClusterId).toBe("default");
+    // For OIDC-sourced bindings the access token is NOT stored in
+    // iron-session — it can blow past the 4 KiB browser cookie
+    // limit. The proxy reads the live token via the activeSession
+    // bridge, which calls auth.js for the current accessToken.
     expect(session.sessions?.["default"]).toEqual({
-      token: "idp-issued-jwt",
+      token: "",
       identity: "alice@example.com",
       scopes: ["read", "write"],
       source: "oidc",
@@ -145,7 +149,7 @@ describe("GET /api/auth/oidc-callback (Phase C)", () => {
     expect(res.headers.get("location")).toBe(
       "http://localhost:3000/login?cluster=default",
     );
-    expect(getSession).not.toHaveBeenCalled();
+    expect(getSessionFor).not.toHaveBeenCalled();
   });
 
   it("returns 401 UNAUTHORIZED when /v1/me rejects the token", async () => {
@@ -156,7 +160,7 @@ describe("GET /api/auth/oidc-callback (Phase C)", () => {
 
     expect(res.status).toBe(401);
     expect((await res.json()).code).toBe("UNAUTHORIZED");
-    expect(getSession).not.toHaveBeenCalled();
+    expect(getSessionFor).not.toHaveBeenCalled();
   });
 
   it("returns 403 FORBIDDEN when /v1/me 403s (no read scope)", async () => {
@@ -211,7 +215,7 @@ describe("GET /api/auth/oidc-callback (Phase C)", () => {
   it("falls back to DEFAULT_CLUSTER_ID when no cluster query is provided", async () => {
     vi.mocked(auth).mockResolvedValueOnce({ accessToken: "t" } as never);
     const session = makeSession({});
-    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+    vi.mocked(getSessionFor).mockResolvedValueOnce(session as never);
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ id: "ops", scopes: ["read"] }), {
         status: 200,
@@ -224,5 +228,38 @@ describe("GET /api/auth/oidc-callback (Phase C)", () => {
     expect(res.status).toBe(307);
     expect(getCluster).toHaveBeenCalledWith("default");
     expect(session.activeClusterId).toBe("default");
+  });
+
+  it("binds iron-session to the redirect response so Set-Cookie survives the redirect", async () => {
+    // Regression guard for the bug we hit on the OIDC docker stack:
+    // calling `getSession()` (cookieStore overload) and then
+    // returning `NextResponse.redirect(...)` silently dropped the
+    // iron-session Set-Cookie header in Next.js 16, because the
+    // cookies-set-via-next/headers auto-merge doesn't propagate onto
+    // a freshly-constructed redirect response. The proxy on the next
+    // request saw an empty session and bounced operators to /login.
+    //
+    // The route must call `getSessionFor(req, res)` with the
+    // already-constructed redirect response so iron-session writes
+    // Set-Cookie directly onto it. This test asserts that contract:
+    // getSessionFor is called with the response that's actually
+    // returned, NOT with a separate cookie store.
+    vi.mocked(auth).mockResolvedValueOnce({ accessToken: "idp-jwt" } as never);
+    const session = makeSession({});
+    vi.mocked(getSessionFor).mockResolvedValueOnce(session as never);
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ id: "alice@example.com", scopes: ["read"] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    const res = await GET(makeReq("cluster=default"));
+
+    // The second arg to getSessionFor must be the same response we
+    // return — that's what makes Set-Cookie reach the browser.
+    expect(getSessionFor).toHaveBeenCalledOnce();
+    const [, passedResponse] = vi.mocked(getSessionFor).mock.calls[0] ?? [];
+    expect(passedResponse).toBe(res);
   });
 });

@@ -1,4 +1,9 @@
-import { isOIDCEnabled, signOut as oidcSignOut } from "@/lib/auth/oidc";
+import {
+  auth as oidcAuth,
+  isOIDCEnabled,
+  rpInitiatedLogout,
+  signOut as oidcSignOut,
+} from "@/lib/auth/oidc";
 import { getSession, type ClusterSession } from "@/lib/auth/session";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -156,22 +161,56 @@ function anyOIDCSession(
 }
 
 /**
- * signOutAuthJsBestEffort calls auth.js's signOut helper when OIDC
- * is enabled. Returns early when the deployment has no OIDC config
- * (auth.js's signOut would throw the noOp guard). Errors are
- * swallowed and logged — a failure here (IdP unreachable, auth.js
- * cookie already cleared by another tab) must NOT block the iron-
- * session destroy. The user-visible effect is "you're signed out";
- * the IdP-side state is best-effort.
+ * signOutAuthJsBestEffort terminates BOTH layers of the OIDC
+ * session when an OIDC-sourced binding is being destroyed:
  *
- * Pass `redirect: false` so auth.js's signOut returns a Response
- * we can ignore rather than redirecting the operator mid-flow —
- * the caller controls the response shape.
+ *   1. RP-initiated logout against the IdP's `end_session_endpoint`
+ *      using the id_token captured at sign-in time. This is what
+ *      actually invalidates the IdP-side session — without this
+ *      step, clicking "Sign in with Keycloak" again would silently
+ *      reuse the same IdP session (SSO behavior), not prompt the
+ *      operator. Best-effort: succeeds when the IdP advertises
+ *      end_session_endpoint and accepts the token; degrades to
+ *      local-only logout otherwise.
+ *
+ *   2. Auth.js's local signOut() to clear the auth.js cookie that
+ *      was carrying the access_token / id_token / refresh_token.
+ *
+ * Both calls are wrapped in try/catch — a failure on either side
+ * (IdP unreachable, auth.js cookie already cleared by another tab,
+ * IdP doesn't support RP-initiated logout) must NOT block the
+ * iron-session destroy. The user-visible promise is "you're signed
+ * out"; the IdP-side state is best-effort.
+ *
+ * Pass `redirect: false` to auth.js's signOut so it returns a
+ * Response we can ignore rather than redirecting the operator
+ * mid-flow — the caller controls the response shape.
  */
 async function signOutAuthJsBestEffort(): Promise<void> {
   if (!isOIDCEnabled) {
     return;
   }
+
+  // Step 1: RP-initiated logout — read id_token from the auth.js
+  // session, hit the IdP's end_session_endpoint. This must run
+  // BEFORE auth.js's local signOut, since signOut clears the
+  // session cookie auth() needs to read.
+  try {
+    const session = (await oidcAuth()) as { idToken?: string } | null;
+    const idToken = session?.idToken;
+    if (typeof idToken === "string" && idToken.length > 0) {
+      const ok = await rpInitiatedLogout(idToken);
+      if (!ok) {
+        console.warn(
+          "[logout] RP-initiated logout returned non-2xx; IdP session may persist",
+        );
+      }
+    }
+  } catch (err) {
+    console.warn("[logout] RP-initiated logout failed (best-effort):", err);
+  }
+
+  // Step 2: clear auth.js's local cookie.
   try {
     await oidcSignOut({ redirect: false });
   } catch (err) {
