@@ -1,5 +1,5 @@
 import { auth, isOIDCEnabled } from "@/lib/auth/oidc";
-import { getSession, type Scope } from "@/lib/auth/session";
+import { getSessionFor, type Scope } from "@/lib/auth/session";
 import { DEFAULT_CLUSTER_ID, getCluster } from "@/lib/clusters/registry";
 import { baseFromHost } from "@/lib/url/host-base";
 import type { NextRequest } from "next/server";
@@ -81,11 +81,31 @@ export async function GET(req: NextRequest): Promise<Response> {
   }
 
   // Read the auth.js session — the access token lives there per
-  // the session callback in oidc.ts. If the operator hit this
-  // route without completing the IdP dance (deep-link, stale tab),
-  // the session is null and we redirect them to /login.
-  const authSession = (await auth()) as { accessToken?: string } | null;
-  if (!authSession?.accessToken) {
+  // the session callback in oidc.ts. Three branches:
+  //
+  //   - missing accessToken → operator hit this route without
+  //     completing the IdP dance (deep-link, stale tab); bounce
+  //     to /login.
+  //   - error: "RefreshAccessTokenError" → auth.js's jwt callback
+  //     tried to refresh against the IdP and was rejected (revoked
+  //     session, network hiccup, refresh-token rotation race).
+  //     Probing /v1/me with the stale accessToken would 401; bounce
+  //     to /login so the operator gets a clean re-auth instead.
+  const authSession = (await auth()) as {
+    accessToken?: string;
+    error?: string;
+  } | null;
+  if (
+    !authSession?.accessToken ||
+    authSession.error === "RefreshAccessTokenError"
+  ) {
+    console.warn(
+      "[oidc-callback] auth.js session unusable; bouncing to /login",
+      {
+        hasAccessToken: typeof authSession?.accessToken === "string",
+        error: authSession?.error,
+      },
+    );
     return NextResponse.redirect(
       new URL(`/login?cluster=${encodeURIComponent(clusterId)}`, base),
     );
@@ -168,15 +188,34 @@ export async function GET(req: NextRequest): Promise<Response> {
   const identity = meParsed.data.id;
   const scopes: Scope[] = meParsed.data.scopes;
 
-  const session = await getSession();
+  // Construct the redirect FIRST, then bind iron-session to it via
+  // the (req, res) overload (`getSessionFor`). session.save()
+  // writes Set-Cookie directly onto this response. The cookieStore
+  // overload from `next/headers` does NOT reliably propagate onto
+  // a freshly-constructed `NextResponse.redirect()` in Next.js 16
+  // — sealing succeeds without error, but the cookie is silently
+  // dropped from the redirect, the next request sees an empty
+  // iron-session, and the proxy bounces the operator to /login.
+  // See src/lib/auth/session.ts:getSessionFor for the rationale.
+  const redirect = NextResponse.redirect(new URL("/topology", base));
+  const session = await getSessionFor(req, redirect);
   session.activeClusterId = clusterId;
+  // For OIDC-sourced bindings we deliberately DO NOT store the
+  // access token in iron-session. The token can be 900+ chars
+  // and, after iron-session's encryption + base64 expansion, can
+  // push the whole cookie past the 4 KiB per-cookie limit some
+  // browsers enforce — Chrome silently drops the cookie when it
+  // exceeds that and the next request lands on /login.
+  //
+  // The proxy reads the LIVE token via `activeSession`'s OIDC
+  // bridge, which calls auth.js for the current (possibly
+  // refreshed) accessToken. Storing an empty string here keeps
+  // the `ClusterSession.token` field type-stable without
+  // shouldering the size cost.
   session.sessions = {
     ...(session.sessions ?? {}),
-    [clusterId]: { token: accessToken, identity, scopes, source: "oidc" },
+    [clusterId]: { token: "", identity, scopes, source: "oidc" },
   };
   await session.save();
-
-  // Land the operator on /topology — the canonical post-login
-  // destination. Mirrors the static-bearer flow's redirect.
-  return NextResponse.redirect(new URL("/topology", base));
+  return redirect;
 }

@@ -384,4 +384,87 @@ describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
   });
+
+  it("hits the IdP's end_session_endpoint with id_token_hint on OIDC-sourced logout", async () => {
+    // The flow under test: whole-session destroy with an OIDC-
+    // sourced binding should call rpInitiatedLogout(idToken) BEFORE
+    // calling auth.js's local signOut. Without this step, the IdP
+    // session persists and SSO silently re-authenticates the
+    // operator on the next sign-in click.
+    const rpInitiatedLogout = vi.fn().mockResolvedValue(true);
+    const authMock = vi.fn().mockResolvedValue({ idToken: "test-id-token" });
+
+    vi.doMock("@/lib/auth/oidc", () => ({
+      isOIDCEnabled: true,
+      signOut: oidcModule.signOut,
+      auth: authMock,
+      rpInitiatedLogout,
+    }));
+    vi.resetModules();
+    const { POST: postWithOIDC } = await import("./route");
+
+    const session = makeSession({
+      activeClusterId: "default",
+      sessions: {
+        default: {
+          token: "idp-jwt",
+          identity: "alice",
+          scopes: ["read"],
+          // @ts-expect-error — OIDC source extension; see above.
+          source: "oidc",
+        },
+      },
+    });
+    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+
+    const res = await postWithOIDC(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(rpInitiatedLogout).toHaveBeenCalledWith("test-id-token");
+    // Local signOut still runs to clear auth.js's cookie alongside
+    // the remote IdP session termination.
+    expect(oidcModule.signOut).toHaveBeenCalled();
+    expect(session.destroy).toHaveBeenCalledOnce();
+  });
+
+  it("swallows RP-initiated logout failures so iron-session destroy still completes", async () => {
+    // IdP unreachable, end_session_endpoint absent, network blip —
+    // the iron-session destroy must still happen so the operator
+    // is at least signed out locally.
+    const rpInitiatedLogout = vi
+      .fn()
+      .mockRejectedValue(new Error("IdP unreachable"));
+    const authMock = vi.fn().mockResolvedValue({ idToken: "test-id-token" });
+
+    vi.doMock("@/lib/auth/oidc", () => ({
+      isOIDCEnabled: true,
+      signOut: oidcModule.signOut,
+      auth: authMock,
+      rpInitiatedLogout,
+    }));
+    vi.resetModules();
+    const { POST: postWithOIDC } = await import("./route");
+
+    const session = makeSession({
+      activeClusterId: "default",
+      sessions: {
+        default: {
+          token: "idp-jwt",
+          identity: "alice",
+          scopes: ["read"],
+          // @ts-expect-error — OIDC source extension; see above.
+          source: "oidc",
+        },
+      },
+    });
+    vi.mocked(getSession).mockResolvedValueOnce(session as never);
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const res = await postWithOIDC(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(session.destroy).toHaveBeenCalledOnce();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
 });

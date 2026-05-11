@@ -9,6 +9,135 @@ authoritative current version.
 
 ## [Unreleased]
 
+## [0.11.0] — Phase C OIDC: refresh, RP-initiated logout, hardening
+
+Closes the v2 follow-ups documented in 0.10.0's stopping
+conditions. OIDC sessions now survive past the IdP's access-token
+TTL without bouncing operators back to /login, and signing out
+actually terminates the IdP-side session so the next sign-in
+isn't silently re-authenticated by SSO.
+
+Also ships a working end-to-end OIDC docker example (cache cluster
+
+- pre-seeded Keycloak + Monitor) under
+  [`examples/oidc/`](examples/oidc/). One command (`make start-oidc`)
+  brings up the full stack with three pre-seeded test users covering
+  read / write / admin scopes.
+
+### Added
+
+- **OIDC token refresh** — auth.js's jwt callback
+  ([src/lib/auth/oidc.ts](src/lib/auth/oidc.ts)) now refreshes the
+  access token against the IdP's token endpoint when it's within
+  30 seconds of expiry. The token endpoint URL is discovered from
+  the IdP's `/.well-known/openid-configuration` rather than
+  hardcoded, so the same code path works against Keycloak, Auth0,
+  Microsoft Entra, and Okta. Refresh-token rotation is honoured —
+  if the IdP returns a new refresh token, we adopt it; otherwise
+  the original stays valid. Refresh failures stamp
+  `error: "RefreshAccessTokenError"` on the JWT so the proxy can
+  bounce the operator to /login.
+- **iron-session bridge for refreshed tokens** —
+  [`activeSession`](src/lib/auth/session.ts) overlays the iron-
+  session-stored token with the auth.js current accessToken when
+  `source === "oidc"`. Refreshes propagate to the cache without
+  re-sealing iron-session on every request; static-bearer sessions
+  pass through unchanged. 5 unit tests in
+  [session.test.ts](src/lib/auth/session.test.ts) pin the contract
+  (refresh propagation, RefreshAccessTokenError → null, OIDC-
+  disabled fallback).
+- **RP-initiated logout against the IdP** — the logout flow now
+  calls a new
+  [`rpInitiatedLogout(idToken)`](src/lib/auth/oidc.ts) helper that
+  hits the IdP's `end_session_endpoint` with `id_token_hint`
+  before clearing the local auth.js cookie. Without this step, SSO
+  silently re-authenticated the operator on the next sign-in
+  click; clicking "logout" now actually terminates the IdP-side
+  session. `id_token` was added to the auth.js JWT shape so it
+  survives across requests for use here. 2 new unit tests in
+  [logout/route.test.ts](src/app/api/auth/logout/route.test.ts)
+  cover the happy-path and IdP-failure-still-destroys-iron-session
+  branches.
+- **Working OIDC docker example** — see
+  [`examples/oidc/`](examples/oidc/). Self-contained compose:
+  Keycloak 26.1 with realm + 3 test users + audience mapper +
+  custom `cache-scopes` client scope, layered with the cache
+  cluster (built from sibling `../hypercache`) and the Monitor.
+  `make start-oidc` / `stop-oidc` / `clean-oidc` / `oidc-logs`
+  Make targets in both repos. Operator guide and Troubleshooting
+  in [examples/oidc/README.md](examples/oidc/README.md).
+
+### Changed
+
+- **`AUTH_URL` is now required in production when OIDC is on.**
+  Previously optional; missing it caused auth.js to derive the
+  redirect_uri from the request's Host header — fine on
+  localhost, broken behind a reverse proxy where the in-cluster
+  service name doesn't match the operator-visible host. Schema
+  fails at boot now with a clear message instead of failing the
+  IdP redirect at request time. Dev/test deployments are
+  unaffected.
+- **Edge proxy and OIDC callback redirects use the actual `Host`
+  header** via a new shared
+  [`baseFromHost`](src/lib/url/host-base.ts) helper. Next.js 16
+  standalone constructs `NextRequest.url` from the `HOSTNAME` env
+  var (`0.0.0.0` for the docker bind), not from the incoming Host
+  header — so any redirect built with `new URL(path, req.url)`
+  ended up at `Location: http://0.0.0.0:3000/...`. The helper
+  prefers `X-Forwarded-Host` (proxied deployments), falls back to
+  `Host` (direct), and only uses `req.nextUrl.host` as a last-
+  resort. 5 unit tests pin the resolution order.
+
+### Fixed
+
+- **`/api/auth/oidc-callback` and `/api/auth/login` no longer
+  redirect to `0.0.0.0:3000`** — the symptom that prompted the
+  `baseFromHost` helper. Operators on the docker example landed
+  on a different cookie scope after the IdP roundtrip; the proxy's
+  unauthenticated → /login redirect had the same bug.
+- **OIDC stack required-actions friction** — the example's
+  Keycloak realm now pre-populates `firstName` / `lastName` on
+  every test user and clears `requiredActions: []`, so first
+  login goes straight from IdP → callback without the "complete
+  profile" form.
+- **OIDC stack scope validation** — the realm now defines
+  `profile`, `email`, `web-origins` as proper client scopes (not
+  just referenced ones). Keycloak's `--import-realm` is a strict
+  replace and doesn't auto-create the standard scopes; the
+  defaults-only realm rejected auth.js's
+  `scope=openid profile email` request as `Invalid scopes`.
+- **OIDC stack token rejection** — the realm's `cache-scopes`
+  client scope now carries an `oidc-audience-mapper` so every
+  issued access token includes `aud: hypercache-monitor`.
+  Keycloak's default access-token shape doesn't include the
+  client_id in `aud`; without this, the cache's go-oidc verifier
+  rejected with 401.
+
+### Stopping conditions (still v2)
+
+- **Per-cluster IdP federation.** One IdP across all clusters
+  remains by design. Multi-IdP needs per-cluster `oidc:` config in
+  the cluster registry, per-cluster auth.js provider instances,
+  and cookie scoping per cluster.
+- **Hostname-per-cluster cookie scoping.** Multi-tenant
+  deployments serving a different cluster per hostname currently
+  share one auth.js cookie scope with the monitor's host. Real
+  multi-tenant isolation needs cookie scoping per cluster's host.
+
+### Verified
+
+- `make ci` clean (vitest 235 tests across 28 files, ESLint, tsc,
+  audit, build).
+- `CI=1 make e2e` clean — all 24 E2E specs pass; the
+  in-process oidc-stub continues to back the
+  [oidc.spec.ts](tests/e2e/oidc.spec.ts) IdP roundtrip.
+- Manual: full Keycloak roundtrip via `make start-oidc` —
+  sign-in lands on /topology, mid-session token refresh
+  succeeds against the IdP without a re-login bounce, logout
+  invalidates the Keycloak session (verified by re-clicking
+  "Sign in with Keycloak" — IdP form is shown rather than
+  silent SSO).
+
 ## [0.10.0] — Phase C: auth.js v5 OIDC
 
 Closes the Phase C roadmap with optional OIDC sign-in alongside

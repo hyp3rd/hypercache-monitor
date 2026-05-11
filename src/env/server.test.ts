@@ -91,6 +91,7 @@ describe("env/server OIDC config (Phase C)", () => {
     delete process.env.AUTH_OIDC_PROVIDER_NAME;
     delete process.env.AUTH_OIDC_SCOPES;
     delete process.env.AUTH_SECRET;
+    delete process.env.AUTH_URL;
   };
 
   it("loads cleanly when no AUTH_OIDC_* vars are set (OIDC disabled is the default)", async () => {
@@ -184,6 +185,55 @@ describe("env/server OIDC config (Phase C)", () => {
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
 
     await expect(import("./server")).rejects.toThrow(/AUTH_OIDC_ISSUER/);
+  });
+
+  it("requires AUTH_URL when OIDC is enabled in production", async () => {
+    // The bug class this guards: in standalone Next.js + a real
+    // proxy, missing AUTH_URL makes auth.js build redirect_uri from
+    // the request Host header (= bind address, not the operator-
+    // visible host). The IdP rejects the redirect_uri at the very
+    // first redirect — confusing failure mode at request time, much
+    // cheaper to fail at boot.
+    clearOIDCEnv();
+    vi.stubEnv("NEXT_PHASE", "");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("HYPERCACHE_API_URL", "http://cache:8080");
+    vi.stubEnv("HYPERCACHE_MGMT_URL", "http://cache:8081");
+    vi.stubEnv("IRON_SESSION_SECRET", VALID_SECRET);
+    vi.stubEnv("AUTH_OIDC_ISSUER", "https://idp.example.com");
+    vi.stubEnv("AUTH_OIDC_CLIENT_ID", "client-abc");
+    vi.stubEnv("AUTH_OIDC_CLIENT_SECRET", "client-secret-xyz");
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    // AUTH_URL deliberately omitted.
+
+    await expect(import("./server")).rejects.toThrow(/AUTH_URL/);
+  });
+
+  it("does NOT require AUTH_URL outside production (dev / test)", async () => {
+    clearOIDCEnv();
+    vi.stubEnv("NEXT_PHASE", "");
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("HYPERCACHE_API_URL", "http://cache:8080");
+    vi.stubEnv("HYPERCACHE_MGMT_URL", "http://cache:8081");
+    vi.stubEnv("IRON_SESSION_SECRET", VALID_SECRET);
+    vi.stubEnv("AUTH_OIDC_ISSUER", "https://idp.example.com");
+    vi.stubEnv("AUTH_OIDC_CLIENT_ID", "client-abc");
+    vi.stubEnv("AUTH_OIDC_CLIENT_SECRET", "client-secret-xyz");
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+
+    const { serverEnv } = await import("./server");
+    expect(serverEnv.AUTH_URL).toBeUndefined();
+  });
+
+  it("rejects malformed AUTH_URL (zod .url())", async () => {
+    clearOIDCEnv();
+    vi.stubEnv("NEXT_PHASE", "");
+    vi.stubEnv("HYPERCACHE_API_URL", "http://cache:8080");
+    vi.stubEnv("HYPERCACHE_MGMT_URL", "http://cache:8081");
+    vi.stubEnv("IRON_SESSION_SECRET", VALID_SECRET);
+    vi.stubEnv("AUTH_URL", "monitor.example.com"); // missing scheme
+
+    await expect(import("./server")).rejects.toThrow(/AUTH_URL/);
   });
 });
 

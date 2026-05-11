@@ -30,6 +30,14 @@ export async function proxy(req: NextRequest) {
   // only).
   const session = await getIronSession<SessionData>(req, res, sessionOptions);
   if (!session.activeClusterId) {
+    // Brief log so unauthenticated bounces are observable without
+    // standing up a tracing pipeline. One line per protected hit
+    // when the operator isn't signed in — cheap, useful when
+    // diagnosing "redirect to /login" reports.
+    console.warn(
+      "[proxy] no active cluster session; redirecting to /login from",
+      req.nextUrl.pathname,
+    );
     // baseFromHost reads the `Host` header instead of req.nextUrl,
     // which carries the listener bind address (`0.0.0.0:3000` in
     // standalone mode) and would land the browser on the wrong
