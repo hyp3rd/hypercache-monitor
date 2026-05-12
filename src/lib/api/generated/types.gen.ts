@@ -55,8 +55,8 @@ export type OwnersResponse = {
 export type IdentityResponse = {
     /**
      * Identity label from the auth config (Tokens[].ID,
-     * CertIdentities[].SubjectCN, or `anonymous` when
-     * AllowAnonymous is enabled).
+     * BasicIdentities[].ID, CertIdentities[].SubjectCN, or
+     * `anonymous` when AllowAnonymous is enabled).
      *
      */
     id: string;
@@ -64,6 +64,16 @@ export type IdentityResponse = {
      * Permission scopes granted to this identity.
      */
     scopes: Array<'read' | 'write' | 'admin'>;
+    /**
+     * Stable capability strings derived from `scopes`. Today
+     * each scope maps 1:1 to a single capability prefixed with
+     * `cache.` (e.g. `read` → `cache.read`). Capabilities are
+     * the recommended view for clients — they remain stable
+     * even if a scope is later split across multiple
+     * capabilities.
+     *
+     */
+    capabilities: Array<string>;
 };
 
 export type ItemEnvelope = {
