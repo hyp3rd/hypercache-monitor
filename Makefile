@@ -76,14 +76,18 @@ sec: ## npm audit for high+ severity findings.
 	$(NPM) audit --audit-level=high
 
 pre-commit:
-	@eval "$$(pyenv init -)" && \
-	pyenv activate pre-commit && \
-	pre-commit run -a trailing-whitespace && \
-	pre-commit run -a end-of-file-fixer && \
-	pre-commit run -a markdownlint && \
-	pre-commit run -a yamllint && \
-	pre-commit run -a cspell && \
-	pre-commit run -a cspell
+	@if command -v pyenv >/dev/null 2>&1; then \
+		eval "$$(pyenv init -)" && \
+		pyenv activate pre-commit && \
+		pre-commit run -a trailing-whitespace && \
+		pre-commit run -a end-of-file-fixer && \
+		pre-commit run -a markdownlint && \
+		pre-commit run -a yamllint && \
+		pre-commit run -a cspell && \
+		pre-commit run -a cspell; \
+	else \
+		echo "pyenv command not found"; \
+	fi
 
 # ---- Codegen ---------------------------------------------------------
 codegen: ## Regenerate the OpenAPI typed client from a running cache cluster.
@@ -185,6 +189,7 @@ smoke-mgmt: ## Smoke-test the mgmt-port endpoints against a live cluster.
 	$(SMOKE_TESTS_PATH)/30-smoke-mgmt.sh
 
 smoke: smoke-mgmt smoke-keys smoke-bulk ## Run every smoke script in order.
+
 
 .PHONY: help dev build start fmt fmt-check lint lint-fix typecheck \
 	test test-watch e2e sec codegen codegen-check ci \
