@@ -54,6 +54,7 @@ lint: ## Run ESLint flat config.
 
 lint-fix: ## ESLint with --fix.
 	$(NPM) run lint:fix
+	$(NPM) run format
 
 typecheck: ## TypeScript type-check (no emit).
 	$(NPX) tsc --noEmit
@@ -74,6 +75,16 @@ e2e: ## Playwright end-to-end suite.
 sec: ## npm audit for high+ severity findings.
 	$(NPM) audit --audit-level=high
 
+pre-commit:
+	@eval "$$(pyenv init -)" && \
+	pyenv activate pre-commit && \
+	pre-commit run -a trailing-whitespace && \
+	pre-commit run -a end-of-file-fixer && \
+	pre-commit run -a markdownlint && \
+	pre-commit run -a yamllint && \
+	pre-commit run -a cspell && \
+	pre-commit run -a cspell
+
 # ---- Codegen ---------------------------------------------------------
 codegen: ## Regenerate the OpenAPI typed client from a running cache cluster.
 	$(NPM) run codegen
@@ -91,7 +102,7 @@ codegen-check: ## Regenerate + fail if the output diff is non-empty.
 # (fastest of the slow checks), build last (longest). Each
 # step fails fast on its own — no point running `build` if
 # typecheck already errored.
-ci: fmt-check lint typecheck test sec build ## Run every quality gate.
+ci: pre-commit fmt-check lint typecheck test sec build ## Run every quality gate.
 
 # ---- Local cluster (cross-repo) -------------------------------------
 # Brings up the cache cluster expected to be at the sibling

@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { BatchDeleteData, BatchDeleteErrors, BatchDeleteResponses, BatchGetData, BatchGetErrors, BatchGetResponses, BatchPutData, BatchPutErrors, BatchPutResponses, DeleteCacheItemData, DeleteCacheItemErrors, DeleteCacheItemResponses, GetCacheItemData, GetCacheItemErrors, GetCacheItemResponses, GetHealthzData, GetHealthzResponses, GetIdentityData, GetIdentityErrors, GetIdentityResponses, GetKeyOwnersData, GetKeyOwnersErrors, GetKeyOwnersResponses, GetOpenApiSpecData, GetOpenApiSpecResponses, HeadCacheItemData, HeadCacheItemErrors, HeadCacheItemResponses, PutCacheItemData, PutCacheItemErrors, PutCacheItemResponses } from './types.gen';
+import type { BatchDeleteData, BatchDeleteErrors, BatchDeleteResponses, BatchGetData, BatchGetErrors, BatchGetResponses, BatchPutData, BatchPutErrors, BatchPutResponses, CanPerformData, CanPerformErrors, CanPerformResponses, DeleteCacheItemData, DeleteCacheItemErrors, DeleteCacheItemResponses, GetCacheItemData, GetCacheItemErrors, GetCacheItemResponses, GetHealthzData, GetHealthzResponses, GetIdentityData, GetIdentityErrors, GetIdentityResponses, GetKeyOwnersData, GetKeyOwnersErrors, GetKeyOwnersResponses, GetOpenApiSpecData, GetOpenApiSpecResponses, HeadCacheItemData, HeadCacheItemErrors, HeadCacheItemResponses, PutCacheItemData, PutCacheItemErrors, PutCacheItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -63,6 +63,30 @@ export class Meta {
         return (options?.client ?? client).get<GetIdentityResponses, GetIdentityErrors, ThrowOnError>({
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/v1/me',
+            ...options
+        });
+    }
+
+    /**
+     * Per-capability authorization probe.
+     *
+     * Returns whether the resolved identity holds the requested
+     * capability. Cheaper than the speculative-write pattern
+     * (try the action, catch the 403) and stable across future
+     * scope-to-capability refactors — clients should key off the
+     * capability string, not the internal scope shape.
+     *
+     * Unknown capability values return 400 BAD_REQUEST so typos
+     * don't silently answer "not allowed" when the real issue
+     * is the caller's spelling.
+     *
+     * Requires the `read` scope — same threshold as `/v1/me`.
+     *
+     */
+    public static canPerform<ThrowOnError extends boolean = false>(options: Options<CanPerformData, ThrowOnError>) {
+        return (options.client ?? client).get<CanPerformResponses, CanPerformErrors, ThrowOnError>({
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/v1/me/can',
             ...options
         });
     }

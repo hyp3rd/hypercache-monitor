@@ -164,7 +164,7 @@ export function makeAuthConfig(): NextAuthConfig {
         }
 
         try {
-          return await refreshAccessToken(token, refreshToken);
+          return await dedupedRefresh(token, refreshToken);
         } catch (err) {
           console.error("[auth] token refresh failed:", err);
           return { ...token, error: "RefreshAccessTokenError" as const };
@@ -275,6 +275,139 @@ async function discoverEndpoints(issuer: string): Promise<DiscoveryDoc> {
     };
   })();
   return discoveryCache;
+}
+
+/**
+ * inflightRefreshes serializes concurrent refresh attempts for the
+ * SAME refresh_token. Without it, two parallel jwt() callbacks
+ * (typical when several server components fetch the session in one
+ * request, or when sibling requests fire close together) both call
+ * the IdP with `R1`; rotation hands `R2` to whoever wins the race,
+ * invalidates `R1`, the loser gets `invalid_grant`. With the map,
+ * the second caller awaits the first call's promise and shares the
+ * result.
+ *
+ * Keyed by the OLD refresh_token (the input to the refresh). The
+ * promise is cleared from the map on completion via finally so the
+ * next refresh attempt with a freshly-rotated refresh_token starts
+ * a new call.
+ */
+const inflightRefreshes = new Map<string, Promise<Record<string, unknown>>>();
+
+/**
+ * recentRotations caches successful refresh results for a short
+ * window keyed by the OLD refresh_token. Covers the case where a
+ * request still holding `R1` arrives AFTER a concurrent request
+ * already rotated `R1`→`R2`: the in-flight map has cleared, the
+ * IdP would reject `R1`, but we have the rotation result cached
+ * and return it directly.
+ *
+ * 30-second TTL: long enough to absorb the typical "started just
+ * before rotation" race (one Next.js request lifecycle plus
+ * browser-render variability), short enough that genuinely
+ * revoked tokens still surface as `RefreshAccessTokenError`
+ * within a sane debugging window.
+ */
+const rotationCacheTTLMs = 30_000;
+
+interface RotationEntry {
+  result: Record<string, unknown>;
+  expiresAtMs: number;
+}
+
+const recentRotations = new Map<string, RotationEntry>();
+
+/**
+ * cacheRotation stores the refreshed token shape under the OLD
+ * refresh_token key. Called from dedupedRefresh on success.
+ */
+function cacheRotation(
+  oldRefreshToken: string,
+  result: Record<string, unknown>,
+): void {
+  recentRotations.set(oldRefreshToken, {
+    result,
+    expiresAtMs: Date.now() + rotationCacheTTLMs,
+  });
+}
+
+/**
+ * readRotationCache returns a cached refresh result for the given
+ * OLD refresh_token if one exists and is still within TTL.
+ * Expired entries are evicted lazily on read; the map stays small
+ * because TTL is short and entries are keyed by short-lived
+ * refresh_tokens.
+ */
+function readRotationCache(
+  oldRefreshToken: string,
+): Record<string, unknown> | undefined {
+  const entry = recentRotations.get(oldRefreshToken);
+  if (entry === undefined) {
+    return undefined;
+  }
+  if (Date.now() > entry.expiresAtMs) {
+    recentRotations.delete(oldRefreshToken);
+    return undefined;
+  }
+  return entry.result;
+}
+
+/**
+ * dedupedRefresh is the entry point the jwt() callback uses
+ * instead of refreshAccessToken directly. It composes the two
+ * race-mitigation layers:
+ *
+ *   1. recent-rotations cache — if a successful rotation for this
+ *      refresh_token happened within the last 30s, return the
+ *      cached result without hitting the IdP.
+ *   2. in-flight dedup — if another caller is currently refreshing
+ *      this refresh_token, await their promise and share the
+ *      result.
+ *   3. fresh call — none of the above; call refreshAccessToken,
+ *      cache the success, return.
+ *
+ * Failures aren't cached (a 400 invalid_grant is terminal for the
+ * caller anyway; the next call should re-attempt, not reuse the
+ * error). Inflight entries are cleared in finally regardless of
+ * outcome.
+ */
+async function dedupedRefresh(
+  token: Record<string, unknown>,
+  refreshToken: string,
+): Promise<Record<string, unknown>> {
+  const cached = readRotationCache(refreshToken);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const existing = inflightRefreshes.get(refreshToken);
+  if (existing !== undefined) {
+    return existing;
+  }
+
+  const promise = refreshAccessToken(token, refreshToken)
+    .then((result) => {
+      cacheRotation(refreshToken, result);
+      return result;
+    })
+    .finally(() => {
+      inflightRefreshes.delete(refreshToken);
+    });
+
+  inflightRefreshes.set(refreshToken, promise);
+  return promise;
+}
+
+/**
+ * resetRefreshCachesForTests is a test-only hook that clears the
+ * module-level inflight + rotation maps so each test starts from
+ * a clean state. Production code never calls this — leaving it
+ * exported keeps the maps' lifecycle off the public API while
+ * making the tests' state-isolation requirements explicit.
+ */
+export function resetRefreshCachesForTests(): void {
+  inflightRefreshes.clear();
+  recentRotations.clear();
 }
 
 async function refreshAccessToken(
