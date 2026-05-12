@@ -47,15 +47,16 @@ export class Meta {
      * Resolved caller identity.
      *
      * Returns the identity resolved from the request credentials
-     * (bearer token, mTLS cert, or `anonymous` when AllowAnonymous
-     * is enabled). Includes the granted scopes so callers can
-     * introspect their permissions without trial-and-error against
-     * scope-protected routes.
+     * (bearer token, HTTP Basic, mTLS cert, OIDC JWT, or
+     * `anonymous` when AllowAnonymous is enabled). Includes the
+     * granted scopes and the derived capability strings so callers
+     * can introspect their permissions without trial-and-error
+     * against scope-protected routes.
      *
      * Requires the `read` scope — operators in pure-write or pure-
      * admin token configurations do not need to introspect their
      * own identity for normal cache use; the monitor's login flow
-     * is the primary consumer.
+     * and the Go client SDK are the primary consumers.
      *
      */
     public static getIdentity<ThrowOnError extends boolean = false>(options?: Options<GetIdentityData, ThrowOnError>) {
