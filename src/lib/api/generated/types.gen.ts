@@ -76,6 +76,19 @@ export type IdentityResponse = {
     capabilities: Array<string>;
 };
 
+export type CanResponse = {
+    /**
+     * Echoes the queried capability string.
+     */
+    capability: string;
+    /**
+     * True when the resolved identity holds the requested
+     * capability; false otherwise.
+     *
+     */
+    allowed: boolean;
+};
+
 export type ItemEnvelope = {
     key: string;
     /**
@@ -437,6 +450,42 @@ export type GetIdentityResponses = {
 };
 
 export type GetIdentityResponse = GetIdentityResponses[keyof GetIdentityResponses];
+
+export type CanPerformData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The capability string to probe. Must be one of the
+         * three values in the closed `cache.*` namespace.
+         *
+         */
+        capability: 'cache.read' | 'cache.write' | 'cache.admin';
+    };
+    url: '/v1/me/can';
+};
+
+export type CanPerformErrors = {
+    /**
+     * Malformed request (missing key, invalid TTL, bad JSON, …).
+     */
+    400: ErrorResponse;
+    /**
+     * Missing or invalid bearer token.
+     */
+    401: ErrorResponse;
+};
+
+export type CanPerformError = CanPerformErrors[keyof CanPerformErrors];
+
+export type CanPerformResponses = {
+    /**
+     * Probe result.
+     */
+    200: CanResponse;
+};
+
+export type CanPerformResponse = CanPerformResponses[keyof CanPerformResponses];
 
 export type BatchGetData = {
     body: BatchGetRequest;

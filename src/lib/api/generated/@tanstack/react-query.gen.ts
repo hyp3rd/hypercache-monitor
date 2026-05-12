@@ -4,7 +4,7 @@ import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanst
 
 import { client } from '../client.gen';
 import { Batch, Cache, Cluster, Meta, type Options } from '../sdk.gen';
-import type { BatchDeleteData, BatchDeleteError, BatchDeleteResponse2, BatchGetData, BatchGetError, BatchGetResponse2, BatchPutData, BatchPutError, BatchPutResponse2, DeleteCacheItemData, DeleteCacheItemError, DeleteCacheItemResponse, GetCacheItemData, GetCacheItemError, GetCacheItemResponse, GetHealthzData, GetHealthzResponse, GetIdentityData, GetIdentityError, GetIdentityResponse, GetKeyOwnersData, GetKeyOwnersError, GetKeyOwnersResponse, GetOpenApiSpecData, GetOpenApiSpecResponse, PutCacheItemData, PutCacheItemError, PutCacheItemResponse } from '../types.gen';
+import type { BatchDeleteData, BatchDeleteError, BatchDeleteResponse2, BatchGetData, BatchGetError, BatchGetResponse2, BatchPutData, BatchPutError, BatchPutResponse2, CanPerformData, CanPerformError, CanPerformResponse, DeleteCacheItemData, DeleteCacheItemError, DeleteCacheItemResponse, GetCacheItemData, GetCacheItemError, GetCacheItemResponse, GetHealthzData, GetHealthzResponse, GetIdentityData, GetIdentityError, GetIdentityResponse, GetKeyOwnersData, GetKeyOwnersError, GetKeyOwnersResponse, GetOpenApiSpecData, GetOpenApiSpecResponse, PutCacheItemData, PutCacheItemError, PutCacheItemResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -205,6 +205,37 @@ export const getIdentityOptions = (options?: Options<GetIdentityData>) => queryO
         return data;
     },
     queryKey: getIdentityQueryKey(options)
+});
+
+export const canPerformQueryKey = (options: Options<CanPerformData>) => createQueryKey('canPerform', options);
+
+/**
+ * Per-capability authorization probe.
+ *
+ * Returns whether the resolved identity holds the requested
+ * capability. Cheaper than the speculative-write pattern
+ * (try the action, catch the 403) and stable across future
+ * scope-to-capability refactors — clients should key off the
+ * capability string, not the internal scope shape.
+ *
+ * Unknown capability values return 400 BAD_REQUEST so typos
+ * don't silently answer "not allowed" when the real issue
+ * is the caller's spelling.
+ *
+ * Requires the `read` scope — same threshold as `/v1/me`.
+ *
+ */
+export const canPerformOptions = (options: Options<CanPerformData>) => queryOptions<CanPerformResponse, CanPerformError, CanPerformResponse, ReturnType<typeof canPerformQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await Meta.canPerform({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: canPerformQueryKey(options)
 });
 
 /**

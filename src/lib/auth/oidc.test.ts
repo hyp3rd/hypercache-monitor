@@ -370,3 +370,228 @@ describe("jwt callback (token refresh)", () => {
     fetchSpy.mockRestore();
   });
 });
+
+/**
+ * Refresh-token race tests. Cover the two real-world conditions
+ * that surfaced as "[auth] token refresh failed: invalid_grant" in
+ * the deployed monitor:
+ *
+ *   1. Concurrent jwt() calls in the same process holding the same
+ *      refresh_token. Without dedup, both call the IdP, the second
+ *      gets invalid_grant because rotation invalidated R1 the
+ *      moment R2 was issued.
+ *   2. Sequential calls where a late-arrival request still carries
+ *      the OLD refresh_token (e.g. cookie hadn't propagated when
+ *      the second request started). Without a rotation cache, the
+ *      second call sends R1 → IdP rejects → user bounced to /login.
+ *
+ * Both tests assert "IdP token endpoint is called exactly once"
+ * (the discovery call doesn't count; only the POST to /oauth/token).
+ */
+describe("jwt callback (refresh deduplication)", () => {
+  const VALID_SECRET_RACE = "x".repeat(48);
+
+  const clearOIDCEnvRace = () => {
+    delete process.env.AUTH_OIDC_ISSUER;
+    delete process.env.AUTH_OIDC_CLIENT_ID;
+    delete process.env.AUTH_OIDC_CLIENT_SECRET;
+    delete process.env.AUTH_OIDC_PROVIDER_NAME;
+    delete process.env.AUTH_OIDC_SCOPES;
+    delete process.env.AUTH_SECRET;
+  };
+
+  const setOIDCEnvRace = () => {
+    clearOIDCEnvRace();
+    vi.stubEnv("NEXT_PHASE", "");
+    vi.stubEnv("HYPERCACHE_API_URL", "http://cache:8080");
+    vi.stubEnv("HYPERCACHE_MGMT_URL", "http://cache:8081");
+    vi.stubEnv("IRON_SESSION_SECRET", VALID_SECRET_RACE);
+    vi.stubEnv("AUTH_OIDC_ISSUER", "https://idp.example.com");
+    vi.stubEnv("AUTH_OIDC_CLIENT_ID", "client-abc");
+    vi.stubEnv("AUTH_OIDC_CLIENT_SECRET", "client-secret-xyz");
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET_RACE);
+  };
+
+  type JwtCallback = (args: {
+    token: Record<string, unknown>;
+    account?: {
+      access_token?: string;
+      refresh_token?: string;
+      expires_at?: number;
+    } | null;
+  }) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+  const loadModule = async (): Promise<{
+    jwt: JwtCallback;
+    resetRefreshCachesForTests: () => void;
+  }> => {
+    const mod = await import("./oidc");
+    const cb = mod.makeAuthConfig().callbacks?.jwt;
+    if (typeof cb !== "function") {
+      throw new Error("jwt callback missing");
+    }
+    return {
+      jwt: cb as unknown as JwtCallback,
+      resetRefreshCachesForTests: mod.resetRefreshCachesForTests,
+    };
+  };
+
+  // mockIdP returns a fetch stub that serves discovery once and
+  // counts token-endpoint POSTs in the returned object. Each
+  // token call yields a fresh access/refresh shape so a duplicate
+  // call (the bug we're guarding against) would be observable.
+  // The function is typed as `typeof fetch` rather than wrapped in
+  // vi.fn so the result is assignable to mockImplementation
+  // without widening to vi.Mock's loose Procedure signature.
+  const mockIdP = (): {
+    fetchMock: typeof fetch;
+    tokenCalls: { count: number };
+  } => {
+    const tokenCalls = { count: 0 };
+    const fetchMock: typeof fetch = async (input) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.endsWith("/.well-known/openid-configuration")) {
+        return new Response(
+          JSON.stringify({
+            token_endpoint: "https://idp.example.com/oauth/token",
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url === "https://idp.example.com/oauth/token") {
+        tokenCalls.count += 1;
+        return new Response(
+          JSON.stringify({
+            access_token: `refreshed-access-${tokenCalls.count}`,
+            refresh_token: `rotated-refresh-${tokenCalls.count}`,
+            expires_in: 3600,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    };
+    return { fetchMock, tokenCalls };
+  };
+
+  it("concurrent jwt() calls with the same refresh_token hit the IdP exactly once", async () => {
+    setOIDCEnvRace();
+
+    const past = Math.floor(Date.now() / 1000) - 60;
+    const { fetchMock, tokenCalls } = mockIdP();
+    vi.spyOn(globalThis, "fetch").mockImplementation(fetchMock);
+
+    const { jwt, resetRefreshCachesForTests } = await loadModule();
+    resetRefreshCachesForTests();
+
+    const tokenShape = {
+      accessToken: "stale-access",
+      refreshToken: "shared-old-refresh",
+      expiresAt: past,
+    };
+
+    // Three concurrent jwt() callbacks — typical when multiple
+    // server components render in one request and each needs the
+    // session.
+    const [a, b, c] = await Promise.all([
+      jwt({ token: { ...tokenShape } }),
+      jwt({ token: { ...tokenShape } }),
+      jwt({ token: { ...tokenShape } }),
+    ]);
+
+    // All three return the same refreshed access token — they
+    // shared the single IdP call's result.
+    expect(a.accessToken).toBe("refreshed-access-1");
+    expect(b.accessToken).toBe("refreshed-access-1");
+    expect(c.accessToken).toBe("refreshed-access-1");
+
+    // The IdP token endpoint was hit exactly once — dedup worked.
+    expect(tokenCalls.count).toBe(1);
+  });
+
+  it("late-arrival jwt() with the OLD refresh_token reads from the rotation cache (no IdP call)", async () => {
+    setOIDCEnvRace();
+
+    const past = Math.floor(Date.now() / 1000) - 60;
+    const { fetchMock, tokenCalls } = mockIdP();
+    vi.spyOn(globalThis, "fetch").mockImplementation(fetchMock);
+
+    const { jwt, resetRefreshCachesForTests } = await loadModule();
+    resetRefreshCachesForTests();
+
+    // First request: rotates R1 → R2 via the IdP.
+    const first = await jwt({
+      token: {
+        accessToken: "stale-access",
+        refreshToken: "old-refresh",
+        expiresAt: past,
+      },
+    });
+    expect(first.accessToken).toBe("refreshed-access-1");
+    expect(tokenCalls.count).toBe(1);
+
+    // Second request arrives SHORTLY AFTER, still carrying the
+    // OLD refresh_token (its cookie predated the first call's
+    // response). Without the rotation cache, this would call the
+    // IdP with R1 → invalid_grant. With the cache, it returns the
+    // already-rotated result without hitting the IdP.
+    const second = await jwt({
+      token: {
+        accessToken: "stale-access",
+        refreshToken: "old-refresh",
+        expiresAt: past,
+      },
+    });
+    expect(second.accessToken).toBe("refreshed-access-1");
+
+    // No additional IdP token call.
+    expect(tokenCalls.count).toBe(1);
+  });
+
+  it("rotation cache only serves entries within the TTL window", async () => {
+    setOIDCEnvRace();
+
+    const { fetchMock, tokenCalls } = mockIdP();
+    vi.spyOn(globalThis, "fetch").mockImplementation(fetchMock);
+
+    // Freeze Date.now so we can advance time deterministically
+    // past the 30s TTL without sleeping. Important: the mock is
+    // installed BEFORE computing `past` (and before any time-
+    // sensitive check inside jwt()) so the expiry comparison and
+    // cache TTL both operate against the same frozen clock.
+    const baseMs = 1_700_000_000_000;
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(baseMs);
+    const past = Math.floor(baseMs / 1000) - 60;
+
+    const { jwt, resetRefreshCachesForTests } = await loadModule();
+    resetRefreshCachesForTests();
+
+    const first = await jwt({
+      token: {
+        accessToken: "stale-access",
+        refreshToken: "old-refresh",
+        expiresAt: past,
+      },
+    });
+    expect(first.accessToken).toBe("refreshed-access-1");
+    expect(tokenCalls.count).toBe(1);
+
+    // Advance time past the 30s TTL — cache entry should be gone.
+    nowSpy.mockReturnValue(baseMs + 31_000);
+
+    const second = await jwt({
+      token: {
+        accessToken: "stale-access",
+        refreshToken: "old-refresh",
+        expiresAt: past,
+      },
+    });
+
+    // Second call hits the IdP (no cache hit), gets the next
+    // rotated shape.
+    expect(second.accessToken).toBe("refreshed-access-2");
+    expect(tokenCalls.count).toBe(2);
+
+    nowSpy.mockRestore();
+  });
+});
