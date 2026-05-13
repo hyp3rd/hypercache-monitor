@@ -10,10 +10,13 @@
   ],
   "dictionaries": ["custom-dictionary"],
   "words": [
+    "amortisation",
     "authjs",
+    "autosync",
     "autobuild",
     "BACKCHANNEL",
     "buildx",
+    "coalescer",
     "dedup",
     "distroless",
     "EDITMSG",
@@ -28,6 +31,7 @@
     "PKCE",
     "pyenv",
     "subshell",
+    "summarises",
     "trivago",
     "usermodel",
     "Vercel"

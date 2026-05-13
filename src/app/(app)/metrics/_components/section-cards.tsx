@@ -26,6 +26,7 @@ import {
   CircleAlert,
   Database,
   Drama,
+  FlaskConical,
   Forward,
   Gauge,
   GitMerge,
@@ -33,17 +34,24 @@ import {
   HeartPulse,
   Layers,
   Network,
+  PackagePlus,
   Radar,
   RefreshCw,
   Repeat,
   Send,
   ShieldCheck,
+  Shuffle,
+  Timer,
   Trash2,
   TrendingDown,
   TrendingUp,
+  Truck,
   Users,
   XCircle,
+  Zap,
 } from "lucide-react";
+import { metricInfo } from "./metric-descriptions";
+import { MetricInfo, type MetricInfoContent } from "./metric-info";
 import { MetricTile } from "./metric-tile";
 
 /**
@@ -183,36 +191,42 @@ export function TrafficCard({ series }: { series: Series }) {
           Icon={Send}
           series={series.forwardGet}
           tone="primary"
+          info={metricInfo.forwardGet}
         />
         <MetricTile
           label="Forward SET"
           Icon={ArrowUpFromLine}
           series={series.forwardSet}
           tone="primary"
+          info={metricInfo.forwardSet}
         />
         <MetricTile
           label="Forward DELETE"
           Icon={Trash2}
           series={series.forwardRemove}
           tone="warning"
+          info={metricInfo.forwardRemove}
         />
         <MetricTile
           label="Replica fan-out SET"
           Icon={ArrowUp}
           series={series.replicaFanoutSet}
           tone="neutral"
+          info={metricInfo.replicaFanoutSet}
         />
         <MetricTile
           label="Replica fan-out DELETE"
           Icon={ArrowDown}
           series={series.replicaFanoutRemove}
           tone="neutral"
+          info={metricInfo.replicaFanoutRemove}
         />
         <MetricTile
           label="Replica GET miss"
           Icon={CircleAlert}
           series={series.replicaGetMiss}
           tone="warning"
+          info={metricInfo.replicaGetMiss}
         />
       </Grid>
     </SectionCard>
@@ -253,6 +267,7 @@ export function ReliabilityCard({
               value={`${probeRate.toFixed(2)}%`}
               caption={`${(data?.heartbeatSuccess ?? 0).toLocaleString()} / ${heartbeatTotal.toLocaleString()} probes`}
               tone="success"
+              info={metricInfo.probeRate}
             />
           )}
           {ackRate !== null && (
@@ -263,6 +278,7 @@ export function ReliabilityCard({
               tone={
                 ackRate >= 99 ? "success" : ackRate >= 95 ? "warning" : "danger"
               }
+              info={metricInfo.ackRate}
             />
           )}
         </div>
@@ -273,36 +289,49 @@ export function ReliabilityCard({
           Icon={HeartPulse}
           series={series.heartbeatSuccess}
           tone="success"
+          info={metricInfo.heartbeatSuccess}
         />
         <MetricTile
           label="Heartbeat failure"
           Icon={Heart}
           series={series.heartbeatFailure}
           tone="warning"
+          info={metricInfo.heartbeatFailure}
         />
         <MetricTile
           label="Indirect probe success"
           Icon={CheckCircle2}
           series={series.indirectProbeSuccess}
           tone="success"
+          info={metricInfo.indirectProbeSuccess}
         />
         <MetricTile
           label="Indirect probe failure"
           Icon={XCircle}
           series={series.indirectProbeFailure}
           tone="danger"
+          info={metricInfo.indirectProbeFailure}
         />
         <MetricTile
           label="Indirect probe refuted"
           Icon={Repeat}
           series={series.indirectProbeRefuted}
           tone="neutral"
+          info={metricInfo.indirectProbeRefuted}
         />
         <MetricTile
           label="Write quorum failures"
           Icon={AlertTriangle}
           series={series.writeQuorumFailures}
           tone="danger"
+          info={metricInfo.writeQuorumFailures}
+        />
+        <MetricTile
+          label="Forward promotions"
+          Icon={ArrowUpRightFromCircle}
+          series={series.writeForwardPromotion}
+          tone="warning"
+          info={metricInfo.writeForwardPromotion}
         />
       </Grid>
     </SectionCard>
@@ -319,6 +348,19 @@ export function RepairCard({
   data: DistMetrics | undefined;
 }) {
   const lastSyncErr = data?.lastAutoSyncError ?? "";
+
+  // Coalesce ratio: of all repair-queue enqueues that COULD have
+  // become wire calls, what fraction was collapsed by the
+  // coalescer? = coalesced / (coalesced + batched). Operators read
+  // this as the amortisation factor of `WithDistReadRepairBatch`.
+  // Only meaningful when the batched path is in use — fall back to
+  // null when nothing has been routed through the queue.
+  const coalesced = data?.readRepairCoalesced ?? 0;
+  const batched = data?.readRepairBatched ?? 0;
+  const coalesceTotal = coalesced + batched;
+  const coalesceRatio =
+    coalesceTotal > 0 ? (coalesced / coalesceTotal) * 100 : null;
+
   return (
     <SectionCard
       Icon={GitMerge}
@@ -336,60 +378,94 @@ export function RepairCard({
           <p className="mt-1 font-mono text-[13px] break-all">{lastSyncErr}</p>
         </div>
       )}
+      {coalesceRatio !== null && (
+        <div className="mb-4">
+          <HeroNumber
+            label="Read-repair coalesce ratio"
+            value={`${coalesceRatio.toFixed(1)}%`}
+            caption={`${coalesced.toLocaleString()} collapsed / ${coalesceTotal.toLocaleString()} enqueued`}
+            tone="success"
+            info={metricInfo.coalesceRatio}
+          />
+        </div>
+      )}
       <Grid>
         <MetricTile
           label="Read repair"
           Icon={RefreshCw}
           series={series.readRepair}
           tone="success"
+          info={metricInfo.readRepair}
+        />
+        <MetricTile
+          label="Read repair (batched)"
+          Icon={PackagePlus}
+          series={series.readRepairBatched}
+          tone="primary"
+          info={metricInfo.readRepairBatched}
+        />
+        <MetricTile
+          label="Read repair (coalesced)"
+          Icon={Shuffle}
+          series={series.readRepairCoalesced}
+          tone="success"
+          info={metricInfo.readRepairCoalesced}
         />
         <MetricTile
           label="Merkle syncs"
           Icon={Layers}
           series={series.merkleSyncs}
           tone="primary"
+          info={metricInfo.merkleSyncs}
         />
         <MetricTile
           label="Merkle keys pulled"
           Icon={ArrowDownToLine}
           series={series.merkleKeysPulled}
           tone="primary"
+          info={metricInfo.merkleKeysPulled}
         />
         <MetricTile
           label="Auto-sync loops"
           Icon={Radar}
           series={series.autoSyncLoops}
           tone="neutral"
+          info={metricInfo.autoSyncLoops}
         />
         <MetricTile
           label="Tombstones active"
           Icon={Boxes}
           series={series.tombstonesActive}
           tone="warning"
+          info={metricInfo.tombstonesActive}
         />
         <MetricTile
           label="Tombstones purged"
           Icon={TrendingDown}
           series={series.tombstonesPurged}
           tone="success"
+          info={metricInfo.tombstonesPurged}
         />
         <MetricTile
           label="Version conflicts"
           Icon={AlertTriangle}
           series={series.versionConflicts}
           tone="warning"
+          info={metricInfo.versionConflicts}
         />
         <MetricTile
           label="Version tie-breaks"
           Icon={Drama}
           series={series.versionTieBreaks}
           tone="neutral"
+          info={metricInfo.versionTieBreaks}
         />
         <MetricTile
           label="Read primary promote"
           Icon={ArrowUpRightFromCircle}
           series={series.readPrimaryPromote}
           tone="neutral"
+          info={metricInfo.readPrimaryPromote}
         />
       </Grid>
     </SectionCard>
@@ -421,24 +497,28 @@ export function MembershipCard({
             value={data.membersAlive}
             tone="success"
             Icon={CheckCircle2}
+            info={metricInfo.membersAlive}
           />
           <GaugeTile
             label="Suspect"
             value={data.membersSuspect}
             tone="warning"
             Icon={AlertTriangle}
+            info={metricInfo.membersSuspect}
           />
           <GaugeTile
             label="Dead"
             value={data.membersDead}
             tone="danger"
             Icon={XCircle}
+            info={metricInfo.membersDead}
           />
           <GaugeTile
             label="Membership version"
             value={data.membershipVersion}
             tone="neutral"
             Icon={Gauge}
+            info={metricInfo.membershipVersion}
           />
         </ul>
       )}
@@ -448,12 +528,14 @@ export function MembershipCard({
           Icon={ArrowDown}
           series={series.drains}
           tone="neutral"
+          info={metricInfo.drains}
         />
         <MetricTile
           label="Nodes removed"
           Icon={XCircle}
           series={series.nodesRemoved}
           tone="danger"
+          info={metricInfo.nodesRemoved}
         />
       </Grid>
     </SectionCard>
@@ -470,52 +552,89 @@ export function HintedHandoffCard({
   data: DistMetrics | undefined;
 }) {
   const bytesQueued = data?.hintedBytes ?? 0;
+
+  // Retention rate: of every hint that terminated (replayed OR
+  // expired), what fraction made it through. Pre-fix operators
+  // had no way to see whether transiently-unreachable peers were
+  // being patched up via the queue or losing writes; this is the
+  // single number that summarises it.
+  const replayed = data?.hintedReplayed ?? 0;
+  const expired = data?.hintedExpired ?? 0;
+  const terminated = replayed + expired;
+  const retentionRate = terminated > 0 ? (replayed / terminated) * 100 : null;
+
+  // Migration-hint last age — surfaced as a tile rather than a
+  // sparkline because it's a "most recent observation" gauge, not
+  // a rate.
+  const migrationAgeMs = (data?.migrationHintLastAgeNanos ?? 0) / 1_000_000;
+
   return (
     <SectionCard
       Icon={BellRing}
       title="Hinted handoff"
       description="Pending writes for offline replicas, replayed on recovery."
     >
-      {bytesQueued > 0 && (
-        <div className="mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {retentionRate !== null && (
+          <HeroNumber
+            label="Hint retention rate"
+            value={`${retentionRate.toFixed(1)}%`}
+            caption={`${replayed.toLocaleString()} replayed / ${terminated.toLocaleString()} terminated`}
+            tone={
+              retentionRate >= 95
+                ? "success"
+                : retentionRate >= 80
+                  ? "warning"
+                  : "danger"
+            }
+            info={metricInfo.retentionRate}
+          />
+        )}
+        {bytesQueued > 0 && (
           <HeroNumber
             label="Bytes queued"
             value={formatBytes(bytesQueued)}
             caption="Total bytes pending replay"
             tone="warning"
+            info={metricInfo.bytesQueued}
           />
-        </div>
-      )}
+        )}
+      </div>
       <Grid>
         <MetricTile
           label="Queued"
           Icon={ArrowUp}
           series={series.hintedQueued}
           tone="warning"
+          info={metricInfo.hintedQueued}
         />
         <MetricTile
           label="Replayed"
           Icon={CheckCircle2}
           series={series.hintedReplayed}
           tone="success"
+          info={metricInfo.hintedReplayed}
         />
         <MetricTile
           label="Expired"
           Icon={TrendingDown}
           series={series.hintedExpired}
           tone="neutral"
+          info={metricInfo.hintedExpired}
         />
         <MetricTile
           label="Dropped (per node)"
           Icon={XCircle}
           series={series.hintedDropped}
           tone="danger"
+          info={metricInfo.hintedDropped}
         />
         <MetricTile
           label="Dropped (global)"
           Icon={AlertTriangle}
           series={series.hintedGlobalDropped}
           tone="danger"
+          info={metricInfo.hintedGlobalDropped}
         />
         <MetricTile
           label="Bytes flowing"
@@ -523,6 +642,93 @@ export function HintedHandoffCard({
           series={series.hintedBytes}
           tone="neutral"
           unit=" B/s"
+          info={metricInfo.hintedBytes}
+        />
+        <MetricTile
+          label="Migration · queued"
+          Icon={Truck}
+          series={series.migrationHintQueued}
+          tone="warning"
+          info={metricInfo.migrationHintQueued}
+        />
+        <MetricTile
+          label="Migration · replayed"
+          Icon={CheckCircle2}
+          series={series.migrationHintReplayed}
+          tone="success"
+          info={metricInfo.migrationHintReplayed}
+        />
+        <MetricTile
+          label="Migration · expired"
+          Icon={TrendingDown}
+          series={series.migrationHintExpired}
+          tone="neutral"
+          info={metricInfo.migrationHintExpired}
+        />
+        <MetricTile
+          label="Migration · dropped"
+          Icon={XCircle}
+          series={series.migrationHintDropped}
+          tone="danger"
+          info={metricInfo.migrationHintDropped}
+        />
+      </Grid>
+      {migrationAgeMs > 0 && (
+        <p className="text-muted-foreground mt-3 text-xs">
+          <Timer
+            aria-hidden
+            className="-mt-0.5 mr-1 inline h-3 w-3"
+          />
+          Last migration-hint queue residency:{" "}
+          <span className="text-foreground font-mono tabular-nums">
+            {formatDurationMs(migrationAgeMs)}
+          </span>
+        </p>
+      )}
+    </SectionCard>
+  );
+}
+
+// ---- Chaos ----------------------------------------------------------
+
+export function ChaosCard({
+  series,
+  data,
+}: {
+  series: Series;
+  data: DistMetrics | undefined;
+}) {
+  // Production clusters should have both counters at zero; only
+  // render the card when chaos is actually engaged so the page
+  // stays focused for the typical operator. Test/staging
+  // environments running fault-injection see the card appear as
+  // soon as the first drop or latency injection fires.
+  const drops = data?.chaosDrops ?? 0;
+  const latencies = data?.chaosLatencies ?? 0;
+  if (drops === 0 && latencies === 0) {
+    return null;
+  }
+
+  return (
+    <SectionCard
+      Icon={FlaskConical}
+      title="Chaos"
+      description="Fault-injection signals from the chaos transport wrapper (test/staging only)."
+    >
+      <Grid>
+        <MetricTile
+          label="Transport drops"
+          Icon={Zap}
+          series={series.chaosDrops}
+          tone="danger"
+          info={metricInfo.chaosDrops}
+        />
+        <MetricTile
+          label="Injected latencies"
+          Icon={Timer}
+          series={series.chaosLatencies}
+          tone="warning"
+          info={metricInfo.chaosLatencies}
         />
       </Grid>
     </SectionCard>
@@ -544,24 +750,28 @@ export function RebalanceCard({ series }: { series: Series }) {
           Icon={Repeat}
           series={series.rebalancedKeys}
           tone="primary"
+          info={metricInfo.rebalancedKeys}
         />
         <MetricTile
           label="Batches"
           Icon={Layers}
           series={series.rebalanceBatches}
           tone="neutral"
+          info={metricInfo.rebalanceBatches}
         />
         <MetricTile
           label="Primary migrations"
           Icon={ArrowUpRightFromCircle}
           series={series.rebalancedPrimary}
           tone="warning"
+          info={metricInfo.rebalancedPrimary}
         />
         <MetricTile
           label="Replica diff"
           Icon={GitMerge}
           series={series.rebalancedReplicaDiff}
           tone="neutral"
+          info={metricInfo.rebalancedReplicaDiff}
         />
       </Grid>
     </SectionCard>
@@ -626,11 +836,13 @@ function HeroNumber({
   value,
   caption,
   tone,
+  info,
 }: {
   label: string;
   value: string;
   caption: string;
   tone: "success" | "warning" | "danger" | "neutral";
+  info?: MetricInfoContent;
 }) {
   const tones: Record<typeof tone, string> = {
     success: "text-emerald-500",
@@ -640,9 +852,12 @@ function HeroNumber({
   };
   return (
     <div className="bg-muted/40 ring-border/50 rounded-lg p-3 ring-1">
-      <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-        {label}
-      </p>
+      <div className="flex items-center gap-1">
+        <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+          {label}
+        </p>
+        {info !== undefined && <MetricInfo content={info} />}
+      </div>
       <p className={`mt-1 text-2xl font-semibold tabular-nums ${tones[tone]}`}>
         {value}
       </p>
@@ -656,11 +871,13 @@ function GaugeTile({
   value,
   tone,
   Icon,
+  info,
 }: {
   label: string;
   value: number;
   tone: "success" | "warning" | "danger" | "neutral";
   Icon: typeof Activity;
+  info?: MetricInfoContent;
 }) {
   const tones: Record<typeof tone, string> = {
     success: "text-emerald-500 bg-emerald-500/10 ring-emerald-500/20",
@@ -672,11 +889,14 @@ function GaugeTile({
     <li>
       <figure className="border-border/50 bg-card/50 rounded-lg border p-3">
         <div className="flex items-start justify-between gap-2">
-          <figcaption className="text-muted-foreground text-xs font-medium">
-            {label}
-          </figcaption>
+          <div className="flex min-w-0 items-center gap-1">
+            <figcaption className="text-muted-foreground truncate text-xs font-medium">
+              {label}
+            </figcaption>
+            {info !== undefined && <MetricInfo content={info} />}
+          </div>
           <span
-            className={`flex h-7 w-7 items-center justify-center rounded-md ring-1 ${tones[tone]}`}
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ring-1 ${tones[tone]}`}
           >
             <Icon
               aria-hidden
@@ -697,4 +917,11 @@ function formatBytes(n: number): string {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function formatDurationMs(ms: number): string {
+  if (ms < 1) return `${(ms * 1000).toFixed(0)} µs`;
+  if (ms < 1000) return `${ms.toFixed(1)} ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)} s`;
+  return `${(ms / 60_000).toFixed(1)} m`;
 }

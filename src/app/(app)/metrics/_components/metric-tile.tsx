@@ -3,6 +3,7 @@
 import type { FieldSeries } from "@/lib/metrics/use-metrics-polling";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
+import { MetricInfo, type MetricInfoContent } from "./metric-info";
 import { Sparkline } from "./sparkline";
 
 /**
@@ -50,23 +51,28 @@ export function MetricTile({
   series,
   tone = "primary",
   unit = "/s",
+  info,
 }: {
   label: string;
   Icon: LucideIcon;
   series: FieldSeries;
   tone?: Tone;
   unit?: string;
+  info?: MetricInfoContent;
 }) {
   const styles = TONE_STYLES[tone];
   return (
     <figure className="border-border/50 bg-card/50 hover:border-border hover:bg-card relative overflow-hidden rounded-lg border p-3 transition-colors">
       <div className="flex items-start justify-between gap-2">
-        <figcaption className="text-muted-foreground text-xs font-medium">
-          {label}
-        </figcaption>
+        <div className="flex min-w-0 items-center gap-1">
+          <figcaption className="text-muted-foreground truncate text-xs font-medium">
+            {label}
+          </figcaption>
+          {info !== undefined && <MetricInfo content={info} />}
+        </div>
         <span
           className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-md ring-1",
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-md ring-1",
             styles.tile,
           )}
         >

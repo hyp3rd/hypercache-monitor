@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMetricsPolling } from "@/lib/metrics/use-metrics-polling";
 import {
   CapacityCard,
+  ChaosCard,
   HintedHandoffCard,
   MembershipCard,
   RebalanceCard,
@@ -74,6 +75,10 @@ export function MetricsClient({ clusterId }: { clusterId: string }) {
             data={distMetrics.data}
           />
           <RebalanceCard series={series} />
+          <ChaosCard
+            series={series}
+            data={distMetrics.data}
+          />
         </>
       )}
       {stats.isLoading ? <CardSkeleton /> : <StatsTable stats={stats.data} />}

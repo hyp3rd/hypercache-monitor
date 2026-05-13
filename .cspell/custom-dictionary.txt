@@ -23,6 +23,7 @@ Lockfiles
 Merkle
 Mgmt
 misrouted
+neighbouring
 nextauth
 nums
 nvmrc
@@ -38,6 +39,7 @@ Subcomponents
 Synthesises
 tolower
 topbar
+unreachability
 unstub
 Viam
 Vitest
