@@ -164,6 +164,15 @@ function handle(
     return;
   }
 
+  // /v1/cache/keys — cluster-wide key browser. Listed BEFORE
+  // the parameterized /v1/cache/{key} regex below so the literal
+  // path isn't swallowed by the param matcher (same ordering
+  // rule applies upstream in Fiber).
+  if (url.pathname === "/v1/cache/keys" && req.method === "GET") {
+    handleListKeys(req, res, url);
+    return;
+  }
+
   // Single-key endpoints — handled dynamically. Match
   // /v1/cache/{key} and /v1/owners/{key} before falling
   // through to the static fixture table.
@@ -339,6 +348,81 @@ function handleCacheKey(
         }),
       );
   }
+}
+
+/**
+ * /v1/cache/keys handler — cluster-wide key browser. Drives the
+ * Phase B5 KeysBrowser UI. Reads from the shared `keyStore` so
+ * a PUT made by an earlier test is visible here.
+ *
+ * Mirrors the upstream contract: prefix when no glob
+ * metacharacters, glob via the same algorithm as `path.Match`
+ * (we only need `*` and `?` for the E2E since none of our
+ * specs exercise character classes). Caps and pagination
+ * mirror the Go handler.
+ */
+function handleListKeys(
+  _req: IncomingMessage,
+  res: ServerResponse,
+  url: URL,
+): void {
+  const q = url.searchParams.get("q") ?? "";
+  const cursorRaw = url.searchParams.get("cursor");
+  const limitRaw = url.searchParams.get("limit");
+
+  const cursor = cursorRaw === null || cursorRaw === "" ? 0 : Number(cursorRaw);
+  const limit = limitRaw === null || limitRaw === "" ? 100 : Number(limitRaw);
+
+  if (!Number.isFinite(cursor) || cursor < 0) {
+    res.writeHead(400, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "invalid cursor", code: "BAD_REQUEST" }));
+    return;
+  }
+  if (!Number.isFinite(limit) || limit <= 0) {
+    res.writeHead(400, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "invalid limit", code: "BAD_REQUEST" }));
+    return;
+  }
+
+  const matcher = buildStubMatcher(q);
+  const all = [...keyStore.keys()].filter(matcher).sort();
+
+  const start = Math.min(cursor, all.length);
+  const end = Math.min(start + limit, all.length);
+  const page = all.slice(start, end);
+  const nextCursor = end < all.length ? String(end) : "";
+
+  res.writeHead(200, { "content-type": "application/json" });
+  res.end(
+    JSON.stringify({
+      keys: page,
+      next_cursor: nextCursor,
+      total_matched: all.length,
+      truncated: false,
+      node: "node-1",
+    }),
+  );
+}
+
+/**
+ * Mirror of the upstream's prefix-vs-glob classifier. Only
+ * supports `*` and `?` — character classes (`[abc]`) aren't
+ * needed for any E2E scenario, so we keep this tiny.
+ */
+function buildStubMatcher(pattern: string): (key: string) => boolean {
+  if (pattern === "") return () => true;
+  if (!/[*?[]/.test(pattern)) {
+    return (key) => key.startsWith(pattern);
+  }
+
+  // Compile a JS regex equivalent to the glob. Escape regex
+  // metacharacters except for `*` (→ `.*`) and `?` (→ `.`).
+  const escaped = pattern
+    .replace(/[.+^${}()|\\]/g, "\\$&")
+    .replace(/\*/g, ".*")
+    .replace(/\?/g, ".");
+  const re = new RegExp(`^${escaped}$`);
+  return (key) => re.test(key);
 }
 
 /**

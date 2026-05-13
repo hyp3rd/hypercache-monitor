@@ -36,6 +36,63 @@ test.describe("single-key inspector", () => {
     await expect(page.getByLabel(/value/i)).toBeVisible();
   });
 
+  test("browser: seed → search → click row → inspect", async ({ page }) => {
+    await login(page);
+
+    // 1. Seed two keys via the browser-context fetch. Using
+    //    page.evaluate (not page.request) ensures the iron-session
+    //    cookie travels with the request — page.request's separate
+    //    fetcher context does not share the same auth shell.
+    const prefix = `browse-${Date.now()}`;
+    const seedA = `${prefix}-a`;
+    const seedB = `${prefix}-b`;
+
+    // Land on a same-origin page first so window.fetch resolves
+    // /api/... against the right host.
+    await page.goto("/keys");
+
+    const seedStatus = await page.evaluate(
+      async ({ url, body }) => {
+        const r = await fetch(url, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body,
+        });
+        return r.status;
+      },
+      {
+        url: "/api/clusters/default/api/v1/cache/batch/put",
+        body: JSON.stringify({
+          items: [
+            { key: seedA, value: "alpha" },
+            { key: seedB, value: "beta" },
+          ],
+        }),
+      },
+    );
+
+    expect(seedStatus, "bulk seed POST should succeed").toBeLessThan(400);
+
+    // 2. Type the prefix in the browser search. After the 250ms
+    //    debounce settles, both seeded keys appear as rows.
+    const pattern = page.getByLabel(/^Pattern$/i);
+    await pattern.fill(prefix);
+
+    const rowA = page.getByRole("row").filter({ hasText: seedA });
+    const rowB = page.getByRole("row").filter({ hasText: seedB });
+    await expect(rowA).toBeVisible({ timeout: 5_000 });
+    await expect(rowB).toBeVisible({ timeout: 5_000 });
+
+    // 3. Click row A. URL flips to ?k=<seedA> and the inspector
+    //    on the right surfaces the stored value.
+    await rowA.click();
+    await expect(page).toHaveURL(new RegExp(`\\?k=${seedA}`));
+    await expect(
+      page.getByRole("tabpanel").getByText("alpha", { exact: true }),
+    ).toBeVisible({ timeout: 5_000 });
+  });
+
   test("PUT → GET → DELETE round trip", async ({ page }) => {
     await login(page);
     const keyName = `e2e-roundtrip-${Date.now()}`;

@@ -9,6 +9,36 @@ authoritative current version.
 
 ## [Unreleased]
 
+### Added
+
+- **Cluster-wide key browser on `/keys`.** The Keys page is now master-detail:
+  the left pane is a paged, searchable list of keys across the entire cluster,
+  the right pane is the existing single-key inspector. Selecting a row sets
+  `?k=<key>` so the inspector picks it up (and refresh / share-link semantics
+  stay intact). The search input switches between prefix mode (no glob
+  metacharacters → `strings.HasPrefix` upstream) and glob mode (`*`, `?`, `[`
+  trigger `path.Match` semantics) — 250ms debounce so the cluster fan-out
+  fires on pauses, not keystrokes. The new
+  [`<KeysBrowser>`](<src/app/(app)/keys/_components/keys-browser.tsx>) owns
+  cursor-walk state via a small stack so the prev button never re-fans the
+  cluster, and TanStack Query keys are `(clusterId, q, cursor)` so identical
+  (filter, page) requests hit the in-memory query cache. Banners surface
+  truncation (`max`-cap reached upstream — operator should refine the
+  pattern) and partial peers (cluster fan-out failures — their keys may be
+  missing from this page). The new fetcher + zod schema lives in
+  [`src/lib/api/keys-list.ts`](src/lib/api/keys-list.ts) — kept separate from
+  `keys.ts` because the semantics are different (operator-debug enumeration
+  vs. per-key access), mirroring how `bulk.ts` is split off. Six zod unit
+  tests in [`keys-list.test.ts`](src/lib/api/keys-list.test.ts) pin the wire
+  shape including the `omitempty` happy-path (`.default([])` normalizes a
+  missing `partial_nodes` to `[]`). E2E coverage in
+  [`tests/e2e/keys.spec.ts`](tests/e2e/keys.spec.ts) seeds via batch-PUT,
+  filters by prefix, asserts the row appears, clicks it, and verifies the
+  URL flips to `?k=<key>` and the inspector renders the stored value; a new
+  `/v1/cache/keys` handler in the E2E stub serves the page so the suite
+  stays hermetic. The redundant `<KeySearch>` component was deleted — the
+  browser covers its workflow plus enumeration.
+
 ## [0.11.0] — Phase C OIDC: refresh, RP-initiated logout, hardening
 
 Closes the v2 follow-ups documented in 0.10.0's stopping
