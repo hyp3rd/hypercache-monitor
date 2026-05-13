@@ -16,9 +16,9 @@ import { CacheApiError } from "@/lib/api/keys";
 import { fetchKeyList, type ListKeysResponse } from "@/lib/api/keys-list";
 import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 /**
  * Master-detail "browse" side of the Keys page. Owns:
@@ -42,7 +42,13 @@ import { useEffect, useState } from "react";
  * at a time.
  */
 
-const PAGE_SIZE = 100;
+// Page size is intentionally smaller than the upstream's
+// `listKeysDefaultLimit` (100). The API default optimizes for
+// script consumers fetching as much as one call buys; the UI
+// optimizes for "what fits on screen" + "Prev/Next is visible
+// even with small key sets". Browsing 1000+ keys at 25 / page
+// is faster than scrolling a single 1000-row table.
+const PAGE_SIZE = 25;
 const SEARCH_DEBOUNCE_MS = 250;
 
 export function KeysBrowser({
