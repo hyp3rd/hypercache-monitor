@@ -27,4 +27,11 @@ export const queryKeys = {
     ["cluster", clusterId, "key", key] as const,
   keyOwners: (clusterId: string, key: string) =>
     ["cluster", clusterId, "key", key, "owners"] as const,
+  // Cluster-wide key browser. `q` and `cursor` are part of the
+  // key so each (filter, page) combination is cached
+  // independently — flipping back to a previous page via the
+  // browser's Back button hits the cache rather than re-fanning
+  // out across the cluster.
+  keyList: (clusterId: string, q: string, cursor: string) =>
+    ["cluster", clusterId, "key-list", q, cursor] as const,
 } as const;

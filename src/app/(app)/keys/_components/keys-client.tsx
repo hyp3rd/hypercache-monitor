@@ -15,7 +15,7 @@ import { Database, KeyRound } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { KeyDetail } from "./key-detail";
-import { KeySearch } from "./key-search";
+import { KeysBrowser } from "./keys-browser";
 
 /**
  * Orchestrator for the Single-Key Inspector. Owns:
@@ -56,25 +56,26 @@ export function KeysClient({
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-      <Card className="border-border/50 bg-card/60 xl:sticky xl:top-0 xl:col-span-4 xl:self-start">
+      <Card className="border-border/50 bg-card/60 xl:sticky xl:top-0 xl:col-span-5 xl:self-start">
         <CardHeader className="flex-row items-center gap-3 space-y-0">
           <SectionIcon Icon={KeyRound} />
           <div>
-            <CardTitle>Lookup</CardTitle>
+            <CardTitle>Browse</CardTitle>
             <CardDescription>
-              Load a key by name. Values are fetched on demand.
+              Search by prefix or glob and pick a key to inspect.
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          <KeySearch
-            initialKey={activeKey ?? ""}
-            onSubmit={setKey}
+          <KeysBrowser
+            clusterId={clusterId}
+            selectedKey={activeKey}
+            onSelect={setKey}
           />
         </CardContent>
       </Card>
 
-      <div className="xl:col-span-8">
+      <div className="xl:col-span-7">
         {activeKey === null ? (
           <EmptyState />
         ) : (

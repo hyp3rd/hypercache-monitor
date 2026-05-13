@@ -23,6 +23,8 @@
     "healthcheck",
     "Healthz",
     "hostnames",
+    "metacharacter",
+    "metacharacters",
     "mkdocs",
     "multivalued",
     "nextjs",
