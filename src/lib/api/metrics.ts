@@ -116,6 +116,8 @@ const distMetricsWireSchema = z.object({
   ReplicaGetMiss: z.number().int().nonnegative(),
   // reliability
   ReadRepair: z.number().int().nonnegative(),
+  ReadRepairBatched: z.number().int().nonnegative(),
+  ReadRepairCoalesced: z.number().int().nonnegative(),
   HeartbeatSuccess: z.number().int().nonnegative(),
   HeartbeatFailure: z.number().int().nonnegative(),
   IndirectProbeSuccess: z.number().int().nonnegative(),
@@ -124,6 +126,7 @@ const distMetricsWireSchema = z.object({
   WriteAcks: z.number().int().nonnegative(),
   WriteAttempts: z.number().int().nonnegative(),
   WriteQuorumFailures: z.number().int().nonnegative(),
+  WriteForwardPromotion: z.number().int().nonnegative(),
   // membership / drift
   Drains: z.number().int().nonnegative(),
   NodesSuspect: z.number().int().nonnegative(),
@@ -143,6 +146,12 @@ const distMetricsWireSchema = z.object({
   HintedDropped: z.number().int().nonnegative(),
   HintedGlobalDropped: z.number().int().nonnegative(),
   HintedBytes: z.number().int().nonnegative(),
+  // migration-hint subset (rebalance-source hints, separate counters)
+  MigrationHintQueued: z.number().int().nonnegative(),
+  MigrationHintReplayed: z.number().int().nonnegative(),
+  MigrationHintExpired: z.number().int().nonnegative(),
+  MigrationHintDropped: z.number().int().nonnegative(),
+  MigrationHintLastAgeNanos: z.number().int().nonnegative(),
   // merkle / auto-sync / tombstones
   MerkleSyncs: z.number().int().nonnegative(),
   MerkleKeysPulled: z.number().int().nonnegative(),
@@ -150,10 +159,15 @@ const distMetricsWireSchema = z.object({
   MerkleDiffNanos: z.number().int().nonnegative(),
   MerkleFetchNanos: z.number().int().nonnegative(),
   AutoSyncLoops: z.number().int().nonnegative(),
+  AutoSyncCleanTicks: z.number().int().nonnegative(),
+  AutoSyncBackoffFactor: z.number().int().nonnegative(),
   LastAutoSyncNanos: z.number().int().nonnegative(),
   LastAutoSyncError: z.string(),
   TombstonesActive: z.number().int().nonnegative(),
   TombstonesPurged: z.number().int().nonnegative(),
+  // chaos (test/staging only; zero in prod)
+  ChaosDrops: z.number().int().nonnegative(),
+  ChaosLatencies: z.number().int().nonnegative(),
   // rebalance
   RebalancedKeys: z.number().int().nonnegative(),
   RebalanceBatches: z.number().int().nonnegative(),
@@ -174,6 +188,8 @@ export const distMetricsSchema = distMetricsWireSchema.transform((m) => ({
   replicaGetMiss: m.ReplicaGetMiss,
   // reliability
   readRepair: m.ReadRepair,
+  readRepairBatched: m.ReadRepairBatched,
+  readRepairCoalesced: m.ReadRepairCoalesced,
   heartbeatSuccess: m.HeartbeatSuccess,
   heartbeatFailure: m.HeartbeatFailure,
   indirectProbeSuccess: m.IndirectProbeSuccess,
@@ -182,6 +198,7 @@ export const distMetricsSchema = distMetricsWireSchema.transform((m) => ({
   writeAcks: m.WriteAcks,
   writeAttempts: m.WriteAttempts,
   writeQuorumFailures: m.WriteQuorumFailures,
+  writeForwardPromotion: m.WriteForwardPromotion,
   // membership / drift
   drains: m.Drains,
   nodesSuspect: m.NodesSuspect,
@@ -201,6 +218,12 @@ export const distMetricsSchema = distMetricsWireSchema.transform((m) => ({
   hintedDropped: m.HintedDropped,
   hintedGlobalDropped: m.HintedGlobalDropped,
   hintedBytes: m.HintedBytes,
+  // migration-hint subset
+  migrationHintQueued: m.MigrationHintQueued,
+  migrationHintReplayed: m.MigrationHintReplayed,
+  migrationHintExpired: m.MigrationHintExpired,
+  migrationHintDropped: m.MigrationHintDropped,
+  migrationHintLastAgeNanos: m.MigrationHintLastAgeNanos,
   // merkle / auto-sync / tombstones
   merkleSyncs: m.MerkleSyncs,
   merkleKeysPulled: m.MerkleKeysPulled,
@@ -208,10 +231,15 @@ export const distMetricsSchema = distMetricsWireSchema.transform((m) => ({
   merkleDiffNanos: m.MerkleDiffNanos,
   merkleFetchNanos: m.MerkleFetchNanos,
   autoSyncLoops: m.AutoSyncLoops,
+  autoSyncCleanTicks: m.AutoSyncCleanTicks,
+  autoSyncBackoffFactor: m.AutoSyncBackoffFactor,
   lastAutoSyncNanos: m.LastAutoSyncNanos,
   lastAutoSyncError: m.LastAutoSyncError,
   tombstonesActive: m.TombstonesActive,
   tombstonesPurged: m.TombstonesPurged,
+  // chaos
+  chaosDrops: m.ChaosDrops,
+  chaosLatencies: m.ChaosLatencies,
   // rebalance
   rebalancedKeys: m.RebalancedKeys,
   rebalanceBatches: m.RebalanceBatches,

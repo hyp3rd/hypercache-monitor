@@ -67,6 +67,8 @@ export const TRACKED_FIELDS = [
   "replicaGetMiss",
   // reliability
   "readRepair",
+  "readRepairBatched",
+  "readRepairCoalesced",
   "heartbeatSuccess",
   "heartbeatFailure",
   "indirectProbeSuccess",
@@ -75,6 +77,7 @@ export const TRACKED_FIELDS = [
   "writeAcks",
   "writeAttempts",
   "writeQuorumFailures",
+  "writeForwardPromotion",
   // membership transitions (cumulative — gauges live separately)
   "drains",
   "nodesRemoved",
@@ -88,6 +91,11 @@ export const TRACKED_FIELDS = [
   "hintedDropped",
   "hintedGlobalDropped",
   "hintedBytes",
+  // migration-hint subset (rebalance-source hints)
+  "migrationHintQueued",
+  "migrationHintReplayed",
+  "migrationHintExpired",
+  "migrationHintDropped",
   // merkle / auto-sync / tombstones
   "merkleSyncs",
   "merkleKeysPulled",
@@ -99,6 +107,9 @@ export const TRACKED_FIELDS = [
   "rebalanceBatches",
   "rebalancedPrimary",
   "rebalancedReplicaDiff",
+  // chaos (test/staging only; zero in prod)
+  "chaosDrops",
+  "chaosLatencies",
 ] as const satisfies readonly (keyof DistMetrics)[];
 
 export type TrackedField = (typeof TRACKED_FIELDS)[number];
