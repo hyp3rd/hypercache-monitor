@@ -2,7 +2,7 @@
 
 ################################################################################
 # Install dependencies
-FROM node:26-alpine AS deps
+FROM node:26-bookworm-slim AS deps
 WORKDIR /app
 
 COPY ./package.json ./package-lock.json ./
@@ -10,7 +10,7 @@ RUN npm ci --ignore-scripts
 
 ################################################################################
 # Build the Next.js standalone output
-FROM node:26-alpine AS builder
+FROM node:26-bookworm-slim AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -30,7 +30,7 @@ RUN npm run build
 # (next.config.ts: `output: "standalone"`) copies only the files the
 # server actually needs at runtime; we don't ship node_modules or the
 # full source tree.
-FROM node:26-alpine AS runner
+FROM node:26-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
