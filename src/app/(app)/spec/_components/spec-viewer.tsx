@@ -78,8 +78,7 @@ const METHOD_TONE: Record<RenderedMethod, string> = {
 export function SpecViewer({ spec }: { spec: Record<string, unknown> }) {
   const info = spec["info"] as Record<string, unknown> | undefined;
   const paths = spec["paths"] as
-    | Record<string, Record<string, unknown>>
-    | undefined;
+    Record<string, Record<string, unknown>> | undefined;
 
   const operations = paths ? collectOperations(paths) : [];
 
