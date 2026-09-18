@@ -13,16 +13,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * sessions, save, destroy).
  *
  * Mocks `@/lib/auth/oidc` so the route can import the
- * `isOIDCEnabled` flag + `signOut` helper without dragging in
- * auth.js's NextAuth() factory + serverEnv evaluation. This
- * test is about the iron-session mutation logic, not the IdP
- * integration — the OIDC-source branch is exercised by setting
- * `isOIDCEnabled = true` in a dedicated subset.
+ * `isOIDCEnabled` flag + `auth` / `signOut` / `rpInitiatedLogout`
+ * helpers without dragging in auth.js's NextAuth() factory +
+ * serverEnv evaluation. This test is about the iron-session
+ * mutation logic, not the IdP integration — the OIDC-source
+ * branch is exercised by re-mocking with `isOIDCEnabled = true`
+ * in a dedicated subset (see `enableOIDC`).
  */
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
-vi.mock("@/lib/auth/oidc", () => ({ isOIDCEnabled: false, signOut: vi.fn() }));
+vi.mock("@/lib/auth/oidc", () => ({
+  isOIDCEnabled: false,
+  auth: vi.fn().mockResolvedValue(null),
+  signOut: vi.fn(),
+  rpInitiatedLogout: vi.fn().mockResolvedValue(true),
+}));
 
 const { getSession } = await import("@/lib/auth/session");
 const oidcModule = await import("@/lib/auth/oidc");
@@ -209,13 +215,34 @@ describe("POST /api/auth/logout", () => {
   });
 });
 
-describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
-  // Each test in this block re-stubs isOIDCEnabled to true. The
-  // module-level mock defaults to false; vi.mocked + Object.defineProperty
-  // can't override a const export, so we use vi.doMock + a re-import per
-  // test. That's heavier but matches the rule: only mocks at the call
-  // boundary, no module-internal state mutation.
+/**
+ * Re-stubs `@/lib/auth/oidc` with `isOIDCEnabled = true` and the
+ * full export surface the route's OIDC branch touches. The
+ * module-level mock defaults to false; vi.mocked +
+ * Object.defineProperty can't override a const export, so each
+ * OIDC test calls this (vi.doMock + vi.resetModules) and then
+ * re-imports the route. Heavier, but it keeps to the rule: mock
+ * only at the call boundary, never mutate module-internal state.
+ *
+ * `auth()` resolves to null by default — "no auth.js session to
+ * read an id_token from" — so the RP-initiated step is skipped
+ * cleanly. Leaving `auth` / `rpInitiatedLogout` out of the mock
+ * would trip vitest's missing-export guard inside the route's
+ * try/catch and spam the best-effort console.warn into CI output
+ * while the test still (misleadingly) passes.
+ */
+function enableOIDC(overrides: Record<string, unknown> = {}): void {
+  vi.doMock("@/lib/auth/oidc", () => ({
+    isOIDCEnabled: true,
+    signOut: oidcModule.signOut,
+    auth: vi.fn().mockResolvedValue(null),
+    rpInitiatedLogout: vi.fn().mockResolvedValue(true),
+    ...overrides,
+  }));
+  vi.resetModules();
+}
 
+describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
   beforeEach(() => {
     vi.mocked(getSession).mockReset();
     vi.mocked(oidcModule.signOut).mockReset();
@@ -225,12 +252,7 @@ describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
   });
 
   it("calls auth.js signOut on whole-session destroy when an OIDC-sourced session exists and OIDC is enabled", async () => {
-    // Re-mock the module to flip isOIDCEnabled true for this test.
-    vi.doMock("@/lib/auth/oidc", () => ({
-      isOIDCEnabled: true,
-      signOut: oidcModule.signOut,
-    }));
-    vi.resetModules();
+    enableOIDC();
     const { POST: postWithOIDC } = await import("./route");
 
     const session = makeSession({
@@ -257,11 +279,7 @@ describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
   });
 
   it("does not call auth.js signOut when no OIDC-sourced session exists", async () => {
-    vi.doMock("@/lib/auth/oidc", () => ({
-      isOIDCEnabled: true,
-      signOut: oidcModule.signOut,
-    }));
-    vi.resetModules();
+    enableOIDC();
     const { POST: postWithOIDC } = await import("./route");
 
     const session = makeSession({
@@ -280,11 +298,7 @@ describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
   });
 
   it("calls auth.js signOut on per-cluster logout when dropping the last OIDC session", async () => {
-    vi.doMock("@/lib/auth/oidc", () => ({
-      isOIDCEnabled: true,
-      signOut: oidcModule.signOut,
-    }));
-    vi.resetModules();
+    enableOIDC();
     const { POST: postWithOIDC } = await import("./route");
 
     const session = makeSession({
@@ -313,11 +327,7 @@ describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
   });
 
   it("does NOT call auth.js signOut on per-cluster logout when another OIDC session remains", async () => {
-    vi.doMock("@/lib/auth/oidc", () => ({
-      isOIDCEnabled: true,
-      signOut: oidcModule.signOut,
-    }));
-    vi.resetModules();
+    enableOIDC();
     const { POST: postWithOIDC } = await import("./route");
 
     const session = makeSession({
@@ -349,11 +359,7 @@ describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
   });
 
   it("swallows auth.js signOut errors so iron-session destroy still completes", async () => {
-    vi.doMock("@/lib/auth/oidc", () => ({
-      isOIDCEnabled: true,
-      signOut: oidcModule.signOut,
-    }));
-    vi.resetModules();
+    enableOIDC();
     const { POST: postWithOIDC } = await import("./route");
 
     vi.mocked(oidcModule.signOut).mockRejectedValueOnce(
@@ -394,13 +400,7 @@ describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
     const rpInitiatedLogout = vi.fn().mockResolvedValue(true);
     const authMock = vi.fn().mockResolvedValue({ idToken: "test-id-token" });
 
-    vi.doMock("@/lib/auth/oidc", () => ({
-      isOIDCEnabled: true,
-      signOut: oidcModule.signOut,
-      auth: authMock,
-      rpInitiatedLogout,
-    }));
-    vi.resetModules();
+    enableOIDC({ auth: authMock, rpInitiatedLogout });
     const { POST: postWithOIDC } = await import("./route");
 
     const session = makeSession({
@@ -436,13 +436,7 @@ describe("POST /api/auth/logout (Phase C — OIDC-source branch)", () => {
       .mockRejectedValue(new Error("IdP unreachable"));
     const authMock = vi.fn().mockResolvedValue({ idToken: "test-id-token" });
 
-    vi.doMock("@/lib/auth/oidc", () => ({
-      isOIDCEnabled: true,
-      signOut: oidcModule.signOut,
-      auth: authMock,
-      rpInitiatedLogout,
-    }));
-    vi.resetModules();
+    enableOIDC({ auth: authMock, rpInitiatedLogout });
     const { POST: postWithOIDC } = await import("./route");
 
     const session = makeSession({

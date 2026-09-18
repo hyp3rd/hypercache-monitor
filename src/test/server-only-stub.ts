@@ -7,6 +7,6 @@
 // (the proxy, the session helpers, the registry) without
 // fighting the guard.
 //
-// Wired via `vitest.config.ts`'s `resolve.alias["server-only"]`.
+// Wired via `vitest.config.mts`'s `resolve.alias["server-only"]`.
 
 export {};

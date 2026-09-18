@@ -6,6 +6,14 @@ import react from "@vitejs/plugin-react";
 // `playwright.config.ts`. The `src/lib/api/generated` tree is
 // codegen output — we exclude it so a regenerate doesn't trip
 // stale-snapshot tests.
+//
+// `.mts` (not `.ts`): the package has no `"type": "module"`, so a
+// `.ts` config is loaded as CommonJS and Vite warns that its ESM
+// syntax won't survive the upcoming `configLoader: 'native'`
+// default. The explicit ESM extension sidesteps that without
+// flipping module semantics for every other config in the repo.
+// `import.meta.dirname` replaces `__dirname`, which the native
+// loader won't shim (Node >= 20.11 / 22 provides it).
 
 export default defineConfig({
   plugins: [react()],
@@ -27,7 +35,7 @@ export default defineConfig({
         "src/lib/api/generated/**",
         "src/app/**/page.tsx",
         "src/app/**/layout.tsx",
-        "**/*.config.{ts,mjs}",
+        "**/*.config.{ts,mts,mjs}",
       ],
     },
     // next-auth v5 uses Node's package-self-resolution
@@ -40,18 +48,24 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": resolve(import.meta.dirname, "./src"),
       // Next.js `import "server-only"` is a compile-time guard
       // that doesn't exist as a real module. Alias to an empty
       // stub so tests can exercise server-only code without the
       // resolver erroring.
-      "server-only": resolve(__dirname, "./src/test/server-only-stub.ts"),
+      "server-only": resolve(
+        import.meta.dirname,
+        "./src/test/server-only-stub.ts",
+      ),
       // next-auth v5 (and other libraries) import `next/server`
       // bare — Next.js's package self-resolution turns that into
       // `./server.js` at runtime, but Vitest's resolver doesn't
       // implement self-references. Alias to the `.js` file so
       // imports of NextRequest/NextResponse etc. resolve cleanly.
-      "next/server": resolve(__dirname, "./node_modules/next/server.js"),
+      "next/server": resolve(
+        import.meta.dirname,
+        "./node_modules/next/server.js",
+      ),
     },
   },
 });
