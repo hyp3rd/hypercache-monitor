@@ -68,27 +68,20 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  // The React Compiler lint plugin emits an "incompatible library"
-  // warning here (`react-hooks/incompatible-library`). It's
-  // informational and intentionally left visible:
+  // `useReactTable()` returns getter closures (`table.getRowModel()`,
+  // `cell.getContext()`, etc.) that recompute on every call.
+  // Memoizing them across renders would produce stale UI, so React
+  // Compiler skips this component — the correct behavior, which the
+  // `react-hooks/incompatible-library` rule surfaces as a warning.
   //
-  //   - `useReactTable()` returns getter closures
-  //     (`table.getRowModel()`, `cell.getContext()`, etc.) that
-  //     compute on each call. Memoizing those across renders
-  //     would produce stale UI, so React Compiler opts this
-  //     component out of auto-memoization. That's the *correct*
-  //     behavior, not a defect — the compiler is telling us
-  //     "I'm honoring TanStack's design and skipping the
-  //     optimization that would break it."
-  //   - For our paginated 50-row tables the perf impact of the
-  //     opt-out is negligible; auto-memo wouldn't be a meaningful
-  //     win even if it were safe.
-  //   - There's no fix on our side without dropping TanStack
-  //     Table entirely (which would mean re-implementing
-  //     sorting / filtering / pagination by hand). Tracked in the
-  //     library: TanStack/table#5567 — until upstream lands a
-  //     React-Compiler-friendly API the warning is the right
-  //     signal to leave in place rather than silence.
+  // The skip is acknowledged and accepted: tables are paginated at
+  // 50 rows, so a full re-render per state change is cheap, and the
+  // only alternative is dropping TanStack Table. Silencing the rule
+  // here (a `"use no memo"` directive does not quiet it) keeps
+  // `eslint .` warning-free without changing runtime behavior.
+  // Revisit once TanStack Table ships a compiler-friendly API
+  // (TanStack/table#5567).
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,

@@ -12,7 +12,7 @@ include .project-settings.env
 # operators expect `make ci` from muscle memory.
 
 REPO_PREFIX ?= github.com/hyp3rd/hypercache-monitor
-NODE_VERSION ?= 25
+NODE_VERSION ?= 26
 SMOKE_TESTS_PATH ?=./scripts/tests/smoke/
 
 NPM ?= npm
